@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+:root {
+  --surface: #f7fafd;
+  --surface-bright: #f7fafd;
+  --surface-low: #f1f4f7;
+  --surface-container: #ebeef1;
+  --surface-high: #e5e8eb;
+  --surface-highest: #e0e3e6;
+  --white: #ffffff;
+  --ink: #181c1e;
+  --muted: #434750;
+  --outline: #747781;
+  --outline-variant: #c3c6d1;
+  --primary: #001b40;
+  --primary-container: #003066;
+  --secondary: #964900;
+  --orange: #ff8927;
+  --tertiary: #011c3e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-hanken), "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-manrope), "Manrope", ui-sans-serif, system-ui, sans-serif;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: var(--orange);
+  color: var(--tertiary);
+}
+
+.container-site {
+  width: min(1280px, calc(100% - 40px));
+  margin-inline: auto;
+}
+
+@media (min-width: 768px) {
+  .container-site {
+    width: min(1280px, calc(100% - 128px));
+  }
+}
+
+.section-gap {
+  padding-block: 80px;
+}
+
+.soft-shadow {
+  box-shadow: 0 10px 24px -4px rgba(0, 27, 64, 0.08);
+}
+
+.ambient-shadow {
+  box-shadow: 0 4px 24px -4px rgba(0, 27, 64, 0.08);
+}
+
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(0, 48, 102, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 48, 102, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.hero-diagonal::after {
+  content: "";
+  position: absolute;
+  right: -15%;
+  top: 0;
+  width: 52%;
+  height: 100%;
+  background: #2f2e38;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.focus-ring:focus-visible {
+  outline: 3px solid rgba(255, 137, 39, 0.45);
+  outline-offset: 2px;
+}
+
+.prose-brand p {
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+.field{width:100%;min-height:48px;border:1px solid #c3c6d1;border-radius:.25rem;background:#f1f4f7;padding:.75rem 1rem;color:#181c1e;outline:none;transition:border-color .2s,box-shadow .2s}.field:focus{border-color:#001b40;box-shadow:0 0 0 3px rgba(0,27,64,.08)}
