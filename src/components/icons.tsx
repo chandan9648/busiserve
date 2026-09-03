@@ -6,7 +6,6 @@ import {
   Globe2,
   Grid2X2,
   LayoutGrid,
-  Linkedin,
   Mail,
   MapPin,
   Menu,
@@ -14,7 +13,6 @@ import {
   Send,
   Smartphone,
   Target,
-  Twitter,
   Users,
   Eye,
 } from "lucide-react";
@@ -34,7 +32,6 @@ export {
   Globe2,
   Grid2X2,
   LayoutGrid,
-  Linkedin,
   Mail,
   MapPin,
   Menu,
@@ -42,7 +39,6 @@ export {
   Send,
   Smartphone,
   Target,
-  Twitter,
   Users,
   Eye,
 };
