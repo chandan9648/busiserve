@@ -1,9 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64">
-  <g transform="translate(4 7)">
-    <path d="M4 42V18L28 6l24 12v24" fill="none" stroke="#003066" stroke-width="4"/>
-    <path d="M14 42V24h28v18M22 24v18" fill="none" stroke="#003066" stroke-width="4"/>
-    <path d="M32 10l10-5 5 9-10 5z" fill="#ff8927"/>
-    <path d="M43 6l7-3" stroke="#ff8927" stroke-width="3" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 360" role="img" aria-labelledby="title description">
+  <title id="title">Busiserve</title>
+  <desc id="description">Busiserve digital solutions for growth logo</desc>
+  <g transform="translate(276 12)">
+    <path d="m104 0 104 60v120l-104 60L0 180V60z" fill="none" stroke="#0873a5" stroke-width="18"/>
+    <path d="m104 27 80 46v93l-80 47-80-47V73z" fill="none" stroke="#123d78" stroke-width="12"/>
+    <path d="M53 174V89l51-30 50 30v84M79 91h51v83M104 59v32" fill="none" stroke="#1688b4" stroke-width="12"/>
+    <path d="m18 180 48 36 76-73 46-30" fill="none" stroke="#f47d20" stroke-width="18"/>
+    <path d="m166 111 24-7-4 25z" fill="#f47d20"/>
+    <circle cx="53" cy="174" r="10" fill="#fff" stroke="#123d78" stroke-width="8"/>
+    <circle cx="104" cy="143" r="10" fill="#fff" stroke="#123d78" stroke-width="8"/>
   </g>
-  <text x="66" y="40" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#001b40">Busiserve</text>
+  <text x="380" y="310" text-anchor="middle" font-family="Arial, sans-serif" font-size="58" font-weight="700" letter-spacing="1" fill="#062d63">BUSI<tspan fill="#ee751a">SERVE</tspan></text>
 </svg>

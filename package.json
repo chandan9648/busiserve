@@ -10,16 +10,19 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "firebase": "^12.18.0",
     "firebase-admin": "latest",
     "framer-motion": "latest",
     "lucide-react": "latest",
     "next": "latest",
+    "razorpay": "^2.9.8",
     "react": "latest",
     "react-dom": "latest",
     "react-hook-form": "latest",
     "zod": "latest"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "latest",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
@@ -28,7 +31,6 @@
     "eslint-config-next": "latest",
     "postcss": "latest",
     "tailwindcss": "latest",
-    "typescript": "latest",
-    "@tailwindcss/postcss": "latest"
+    "typescript": "latest"
   }
 }
