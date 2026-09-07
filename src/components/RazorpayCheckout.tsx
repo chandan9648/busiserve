@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { auth } from "@/lib/firebase/auth";
 
 declare global {
   interface Window {
@@ -91,6 +92,9 @@ export default function RazorpayCheckout({
 
           headers: {
             "Content-Type": "application/json",
+            ...(auth.currentUser
+              ? { Authorization: `Bearer ${await auth.currentUser.getIdToken()}` }
+              : {}),
           },
 
           body: JSON.stringify({
@@ -141,6 +145,9 @@ export default function RazorpayCheckout({
                   headers: {
                     "Content-Type":
                       "application/json",
+                          ...(auth.currentUser
+                            ? { Authorization: `Bearer ${await auth.currentUser.getIdToken()}` }
+                            : {}),
                   },
 
                   body: JSON.stringify(

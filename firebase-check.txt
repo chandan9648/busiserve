@@ -1,0 +1,7 @@
+.next/dev/types/cache-life.d.ts(3,1): error TS6200: Definitions of the following identifiers conflict with those in another file: unstable_cache, updateTag, revalidateTag, revalidatePath, refresh, unstable_noStore, io, cacheTag, unstable_cacheTag, unstable_cacheLife
+.next/dev/types/routes.d.ts(66,8): error TS2300: Duplicate identifier 'LayoutProps'.
+.next/types/cache-life.d.ts(3,1): error TS6200: Definitions of the following identifiers conflict with those in another file: unstable_cache, updateTag, revalidateTag, revalidatePath, refresh, unstable_noStore, io, cacheTag, unstable_cacheTag, unstable_cacheLife
+.next/types/routes.d.ts(66,8): error TS2300: Duplicate identifier 'LayoutProps'.
+node_modules/firebase/firestore/dist/firestore/index.d.ts(17,15): error TS7016: Could not find a declaration file for module '@firebase/firestore'. 'C:/Users/LENOVO/Desktop/busiserve/node_modules/@firebase/firestore/dist/index.esm.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/firebase__firestore` if it exists or add a new declaration (.d.ts) file containing `declare module '@firebase/firestore';`
+src/lib/firebase/firestore.ts(1,10): error TS2305: Module '"firebase/firestore"' has no exported member 'getFirestore'.

@@ -22,12 +22,18 @@ export async function POST(request: Request) {
       );
     }
 
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      throw new Error("Missing RAZORPAY_WEBHOOK_SECRET");
+    }
+
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
+      .createHmac("sha256", webhookSecret)
       .update(rawBody)
       .digest("hex");
 
     if (
+      expectedSignature.length !== signature.length ||
       !crypto.timingSafeEqual(
         Buffer.from(expectedSignature),
         Buffer.from(signature)
@@ -45,22 +51,35 @@ export async function POST(request: Request) {
 
     const event = JSON.parse(rawBody);
 
-    // Log the event for debugging
-    console.log("Razorpay webhook event:", event);
+    const payment = event.payload?.payment?.entity;
+    const orderEntity = event.payload?.order?.entity;
+    const razorpayOrderId = payment?.order_id ?? orderEntity?.id;
 
-    if (event.event === "payment.captured") {
-      const payment = event.payload?.payment?.entity;
-
-      if (!payment) {
-        return NextResponse.json({
-          received: true,
-        });
-      }
-
-      // TODO: Process payment with Firebase Admin or your database
-      // For now, just acknowledge the webhook
-      console.log("Payment captured:", payment.id);
+    if (!razorpayOrderId) {
+      return NextResponse.json({ received: true });
     }
+
+    const snapshot = await getAdminDb()
+      .collection("orders")
+      .where("razorpay_order_id", "==", razorpayOrderId)
+      .limit(1)
+      .get();
+    const orderDocument = snapshot.docs[0];
+
+    if (!orderDocument) {
+      return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    }
+
+    const isSuccessful = ["payment.captured", "order.paid"].includes(event.event);
+    const update: Record<string, unknown> = {
+      status: isSuccessful ? "paid" : event.event === "payment.failed" ? "failed" : "updated",
+      payment_status: isSuccessful ? "paid" : event.event === "payment.failed" ? "failed" : "updated",
+      updated_at: new Date(),
+    };
+
+    if (payment?.id) update.razorpay_payment_id = payment.id;
+    if (payment?.error_description) update.payment_error = payment.error_description;
+    await orderDocument.ref.update(update);
 
     return NextResponse.json({
       received: true,
@@ -71,15 +90,6 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "Webhook processing failed.",
-      },
-      {
-        status: 500,
-      }
-    );
-  }
-}
-      {
-        error: "Webhook failed.",
       },
       {
         status: 500,

@@ -1,6 +1,4 @@
 import { redirect } from "next/navigation";
-
-import { createClient } from "@/lib/supabase/server";
 import RazorpayCheckout from "@/components/RazorpayCheckout";
 
 interface Props {
@@ -18,20 +16,6 @@ export default async function CheckoutPage({
 
   if (!plan) {
     redirect("/pricing");
-  }
-
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect(
-      `/auth/login?redirect=/checkout?plan=${encodeURIComponent(
-        plan
-      )}`
-    );
   }
 
   return (
