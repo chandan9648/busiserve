@@ -72,3 +72,90 @@ busiserve-nextjs/
 ├── postcss.config.mjs
 ├── README.md
 └── tsconfig.json
+
+
+
+updated: Updated folder structure
+
+src/
+├── app/
+│   ├── login/
+│   │   └── page.tsx
+│   ├── register/
+│   │   └── page.tsx
+│   ├── forgot-password/
+│   │   └── page.tsx
+│   │
+│   ├── dashboard/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── profile/
+│   │   │   └── page.tsx
+│   │   └── payments/
+│   │       └── page.tsx
+│   │
+│   ├── admin/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── users/
+│   │   │   └── page.tsx
+│   │   └── payments/
+│   │       └── page.tsx
+│   │
+│   ├── checkout/
+│   │   └── page.tsx                 ← existing
+│   ├── payment/
+│   │   └── success/
+│   │       └── page.tsx             ← existing
+│   │
+│   └── api/
+│       ├── auth/
+│       │   ├── session/
+│       │   │   └── route.ts
+│       │   └── logout/
+│       │       └── route.ts
+│       ├── user/
+│       │   ├── profile/
+│       │   │   └── route.ts
+│       │   ├── subscription/
+│       │   │   └── route.ts
+│       │   └── payments/
+│       │       └── route.ts
+│       ├── admin/
+│       │   ├── stats/
+│       │   │   └── route.ts
+│       │   ├── users/
+│       │   │   └── route.ts
+│       │   └── payments/
+│       │       └── route.ts
+│       └── razorpay/
+│           ├── create-order/
+│           │   └── route.ts
+│           ├── verify-payment/
+│           │   └── route.ts
+│           └── webhook/
+│               └── route.ts
+│
+├── components/
+│   ├── auth/
+│   │   ├── LoginForm.tsx
+│   │   ├── RegisterForm.tsx
+│   │   └── ForgotPasswordForm.tsx
+│   ├── dashboard/
+│   │   ├── DashboardNav.tsx
+│   │   ├── SubscriptionCard.tsx
+│   │   └── ExpiryCountdown.tsx
+│   ├── admin/
+│   │   ├── AdminNav.tsx
+│   │   └── AdminCharts.tsx
+│   ├── PricingToggle.tsx           ← existing
+│   └── RazorpayCheckout.tsx        ← existing
+│
+└── lib/
+    ├── firebase/                  ← existing; inspect before editing
+    ├── firebase-admin.ts          ← existing
+    ├── razorpay.ts                ← existing
+    ├── orders.ts                  ← existing
+    ├── auth.ts
+    ├── plans.ts
+    └── subscriptions.ts
