@@ -9,19 +9,19 @@ function getFirebaseConfig() {
   // Keep direct process.env references so Next.js can expose
   // these public variables to the browser.
   const config = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim(),
+    apiKey: process.env.FIREBASE_API_KEY?.trim(),
     authDomain:
-      process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim(),
+      process.env.FIREBASE_AUTH_DOMAIN?.trim(),
     projectId:
-      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim(),
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID?.trim(),
+      process.env.FIREBASE_PROJECT_ID?.trim(),
+    appId: process.env.FIREBASE_APP_ID?.trim(),
   };
 
   const required = [
-    ["NEXT_PUBLIC_FIREBASE_API_KEY", config.apiKey],
-    ["NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", config.authDomain],
-    ["NEXT_PUBLIC_FIREBASE_PROJECT_ID", config.projectId],
-    ["NEXT_PUBLIC_FIREBASE_APP_ID", config.appId],
+    ["FIREBASE_API_KEY", config.apiKey],
+    ["FIREBASE_AUTH_DOMAIN", config.authDomain],
+    ["FIREBASE_PROJECT_ID", config.projectId],
+    ["FIREBASE_APP_ID", config.appId],
   ] as const;
 
   const missing = required

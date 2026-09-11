@@ -45,7 +45,7 @@ export default function Footer() {
             </Link>
 
             <a
-              href={process.env.NEXT_PUBLIC_LINKEDIN_URL ?? "#"}
+              href={process.env.LINKEDIN_URL ?? "#"}
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-white"
@@ -121,7 +121,7 @@ export default function Footer() {
             </Link>
 
             <a
-              href={process.env.NEXT_PUBLIC_LINKEDIN_URL ?? "#"}
+              href={process.env.LINKEDIN_URL ?? "#"}
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-white"
@@ -130,7 +130,7 @@ export default function Footer() {
             </a>
 
             <a
-              href={process.env.NEXT_PUBLIC_TWITTER_URL ?? "#"}
+              href={process.env.TWITTER_URL ?? "#"}
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-white"
@@ -139,7 +139,7 @@ export default function Footer() {
             </a>
 
             <a
-              href={process.env.NEXT_PUBLIC_GITHUB_URL ?? "#"}
+              href={process.env.GITHUB_URL ?? "#"}
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-white"

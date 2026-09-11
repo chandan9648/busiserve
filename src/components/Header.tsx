@@ -110,13 +110,13 @@ export default function Header() {
               src="/logo.svg"
               alt=""
               aria-hidden="true"
-              width={112}
-              height={112}
+              width={114}
+              height={114}
               className="block h-full w-full shrink-0 scale-[1.65] object-contain"
             />
           </span>
 
-          <span className="flex min-w-0 flex-col">
+          {/* <span className="flex min-w-0 flex-col">
             <span className="whitespace-nowrap text-[20px] font-extrabold leading-none tracking-[-0.04em] sm:text-[25px]">
               <span className="text-[#001b40]">BUSI</span>
               <span className="text-[#c65300]">SERVE</span>
@@ -125,7 +125,7 @@ export default function Header() {
             <span className="mt-1.5 hidden whitespace-nowrap text-[8px] font-semibold leading-tight tracking-[0.045em] text-[#003066] min-[380px]:block sm:text-[9px]">
               DIGITAL SOLUTIONS FOR GROWTH
             </span>
-          </span>
+          </span> */}
         </Link>
 
         {/* Desktop navigation */}

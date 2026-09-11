@@ -184,9 +184,9 @@ export const approach = [
 ] as const;
 
 export const contactDefaults = {
-  email: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@busiserve.com",
-  phone: process.env.NEXT_PUBLIC_CONTACT_PHONE ?? "+1 (800) 555-0199",
+  email: process.env.CONTACT_EMAIL ?? "hello@busiserve.com",
+  phone: process.env.CONTACT_PHONE ?? "+1 (800) 555-0199",
   address:
-    process.env.NEXT_PUBLIC_CONTACT_ADDRESS ??
+    process.env.CONTACT_ADDRESS ??
     "100 Innovation Drive, Suite 400, Tech District, CA 94105",
 } as const;
