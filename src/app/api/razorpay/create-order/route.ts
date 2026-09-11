@@ -84,8 +84,7 @@ export async function POST(request: Request) {
         planName: plan.name,
       },
       razorpayKeyId:
-        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ??
-        process.env.RAZORPAY_KEY_ID,
+        process.env.RAZORPAY_KEY_ID
     });
   } catch (error) {
     console.error("Create Razorpay order error:", error);
