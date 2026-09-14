@@ -167,7 +167,7 @@ const input =
   "mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-2 focus:outline-orange-500";
 
 // This account is the primary administrator and must never appear as a customer.
-const PRIMARY_ADMIN_EMAIL = "chandankkumar156@gmail.com";
+const PRIMARY_ADMIN_EMAIL = process.env.YOUR_PRIMARY_ADMIN_EMAIL;  
 
 function isAdminCustomer(user: { uid?: string; email?: string }, currentAdminUid: string) {
   const email = String(user.email || "").trim().toLowerCase();

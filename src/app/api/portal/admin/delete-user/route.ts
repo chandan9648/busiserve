@@ -1,24 +1,33 @@
 import { NextResponse } from "next/server";
 
 import {
-  adminAuth,
-  adminDb,
+  getAdminAuth,
+  getAdminDb,
 } from "@/lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const runtime = "nodejs";
 
 type DecodedAdmin = {
   uid: string;
   email?: string;
 };
 
+type FirebaseAuthError = {
+  code?: string;
+  message?: string;
+};
+
+/**
+ * Verify that the request is coming from an authenticated admin.
+ */
 async function verifyAdmin(
   request: Request,
 ): Promise<DecodedAdmin> {
   const header = request.headers.get("authorization");
 
-  if (!header?.startsWith("Bearer ")) {
+  if (!header || !header.startsWith("Bearer ")) {
     throw new Error("Unauthorized access. Token missing.");
   }
 
@@ -30,16 +39,43 @@ async function verifyAdmin(
     throw new Error("Authentication token is empty.");
   }
 
-  const decoded = await adminAuth.verifyIdToken(token);
+  const adminAuth = getAdminAuth();
+  const adminDb = getAdminDb();
+
+  let decoded;
+
+  try {
+    decoded = await adminAuth.verifyIdToken(token);
+  } catch (error: unknown) {
+    const firebaseError = error as FirebaseAuthError;
+
+    console.error(
+      "Firebase admin token verification failed:",
+      firebaseError,
+    );
+
+    throw new Error("Unauthorized access. Invalid authentication token.");
+  }
 
   const email = String(decoded.email || "")
     .trim()
     .toLowerCase();
 
-  if (!email) {
+  if (!decoded.uid) {
     throw new Error("Invalid token payload.");
   }
 
+  /**
+   * Check the admins collection.
+   *
+   * Supported admin formats:
+   *
+   * 1. admins/{uid}
+   * 2. admins/{email}
+   * 3. { uid: "..." }
+   * 4. { firebaseUid: "..." }
+   * 5. { email: "..." }
+   */
   const adminSnapshot = await adminDb
     .collection("admins")
     .limit(100)
@@ -48,19 +84,27 @@ async function verifyAdmin(
   const isAdmin = adminSnapshot.docs.some((doc) => {
     const data = doc.data();
 
-    const storedEmail = String(data.email || "")
+    const storedEmail = String(
+      data.email || "",
+    )
       .trim()
       .toLowerCase();
 
     const storedUid = String(
-      data.uid || data.firebaseUid || "",
+      data.uid ||
+        data.firebaseUid ||
+        "",
     ).trim();
 
+    const documentId = String(doc.id)
+      .trim()
+      .toLowerCase();
+
     return (
-      storedEmail === email ||
-      storedUid === decoded.uid ||
-      doc.id === decoded.uid ||
-      doc.id.trim().toLowerCase() === email
+      (email && storedEmail === email) ||
+      (decoded.uid && storedUid === decoded.uid) ||
+      documentId === decoded.uid.toLowerCase() ||
+      (email && documentId === email)
     );
   });
 
@@ -70,15 +114,20 @@ async function verifyAdmin(
 
   return {
     uid: decoded.uid,
-    email,
+    email: email || undefined,
   };
 }
 
+/**
+ * Delete all documents matching a UID.
+ */
 async function deleteQueryMatches(
   collectionName: string,
   fieldName: string,
   uid: string,
 ): Promise<number> {
+  const adminDb = getAdminDb();
+
   const snapshot = await adminDb
     .collection(collectionName)
     .where(fieldName, "==", uid)
@@ -88,22 +137,43 @@ async function deleteQueryMatches(
     return 0;
   }
 
-  const batch = adminDb.batch();
+  /**
+   * Firestore batches support a maximum of 500 operations.
+   * Delete in chunks so this also works for larger datasets.
+   */
+  const documents = snapshot.docs;
 
-  for (const doc of snapshot.docs) {
-    batch.delete(doc.ref);
+  let deletedCount = 0;
+
+  for (let i = 0; i < documents.length; i += 500) {
+    const chunk = documents.slice(i, i + 500);
+
+    const batch = adminDb.batch();
+
+    for (const doc of chunk) {
+      batch.delete(doc.ref);
+    }
+
+    await batch.commit();
+
+    deletedCount += chunk.length;
   }
 
-  await batch.commit();
-
-  return snapshot.size;
+  return deletedCount;
 }
 
-export async function DELETE(request: Request) {
+/**
+ * DELETE /api/portal/admin/delete-user?uid=USER_UID
+ */
+export async function DELETE(
+  request: Request,
+) {
   try {
     const admin = await verifyAdmin(request);
 
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(
+      request.url,
+    );
 
     const uid = String(
       searchParams.get("uid") || "",
@@ -115,11 +185,16 @@ export async function DELETE(request: Request) {
           success: false,
           message: "User UID is required.",
         },
-        { status: 400 },
+        {
+          status: 400,
+          headers: {
+            "Cache-Control": "no-store",
+          },
+        },
       );
     }
 
-    /*
+    /**
      * Never allow the currently logged-in admin
      * to delete their own account.
      */
@@ -130,21 +205,29 @@ export async function DELETE(request: Request) {
           message:
             "You cannot delete the currently logged-in administrator.",
         },
-        { status: 403 },
+        {
+          status: 403,
+          headers: {
+            "Cache-Control": "no-store",
+          },
+        },
       );
     }
 
-    /*
-     * Get the Firebase Authentication user first.
+    const adminAuth = getAdminAuth();
+    const adminDb = getAdminDb();
+
+    /**
+     * First check whether the Firebase Authentication
+     * account exists.
      */
     let targetUser;
 
     try {
       targetUser = await adminAuth.getUser(uid);
     } catch (error: unknown) {
-      const firebaseError = error as {
-        code?: string;
-      };
+      const firebaseError =
+        error as FirebaseAuthError;
 
       if (
         firebaseError.code ===
@@ -156,9 +239,19 @@ export async function DELETE(request: Request) {
             message:
               "User not found in Firebase Authentication.",
           },
-          { status: 404 },
+          {
+            status: 404,
+            headers: {
+              "Cache-Control": "no-store",
+            },
+          },
         );
       }
+
+      console.error(
+        "Failed to get Firebase user:",
+        firebaseError,
+      );
 
       throw error;
     }
@@ -169,9 +262,9 @@ export async function DELETE(request: Request) {
       .trim()
       .toLowerCase();
 
-    /*
-     * Never allow an account that exists in the
-     * admins collection to be deleted as a user.
+    /**
+     * Never allow deletion of an account that
+     * belongs to the admins collection.
      */
     const targetAdminSnapshot = await adminDb
       .collection("admins")
@@ -194,12 +287,17 @@ export async function DELETE(request: Request) {
             "",
         ).trim();
 
+        const documentId = String(doc.id)
+          .trim()
+          .toLowerCase();
+
         return (
-          storedEmail === targetEmail ||
+          (targetEmail &&
+            storedEmail === targetEmail) ||
           storedUid === uid ||
-          doc.id === uid ||
-          doc.id.trim().toLowerCase() ===
-            targetEmail
+          documentId === uid.toLowerCase() ||
+          (targetEmail &&
+            documentId === targetEmail)
         );
       });
 
@@ -210,12 +308,17 @@ export async function DELETE(request: Request) {
           message:
             "Administrator accounts cannot be deleted from customer management.",
         },
-        { status: 403 },
+        {
+          status: 403,
+          headers: {
+            "Cache-Control": "no-store",
+          },
+        },
       );
     }
 
-    /*
-     * Delete portal user profile.
+    /**
+     * Delete the user's Firestore profile.
      */
     const userRef = adminDb
       .collection("users")
@@ -227,46 +330,91 @@ export async function DELETE(request: Request) {
       await userRef.delete();
     }
 
-    /*
-     * Delete subscription records.
+    /**
+     * Delete subscriptions associated with this UID.
      *
-     * Some projects use userId while others use uid,
-     * so both fields are cleaned.
+     * Different records may use either:
+     *
+     * userId
+     * uid
      */
     const cleanupTargets = [
       ["subscriptions", "userId"],
       ["subscriptions", "uid"],
     ] as const;
 
+    const cleanupResults: Record<
+      string,
+      number
+    > = {};
+
     for (const [
       collectionName,
       fieldName,
     ] of cleanupTargets) {
       try {
-        await deleteQueryMatches(
-          collectionName,
-          fieldName,
-          uid,
-        );
-      } catch (error) {
+        const deletedCount =
+          await deleteQueryMatches(
+            collectionName,
+            fieldName,
+            uid,
+          );
+
+        cleanupResults[
+          `${collectionName}.${fieldName}`
+        ] = deletedCount;
+      } catch (error: unknown) {
         console.warn(
           `Could not clean ${collectionName}.${fieldName}:`,
           error,
         );
+
+        cleanupResults[
+          `${collectionName}.${fieldName}`
+        ] = 0;
       }
     }
 
-    /*
-     * Finally delete the Firebase Authentication user.
+    /**
+     * Finally delete the Firebase Authentication
+     * account.
+     *
+     * This is intentionally done last.
      */
-    await adminAuth.deleteUser(uid);
+    try {
+      await adminAuth.deleteUser(uid);
+    } catch (error: unknown) {
+      const firebaseError =
+        error as FirebaseAuthError;
 
-    const response = NextResponse.json({
-      success: true,
-      message: "User permanently deleted.",
-      uid,
-      email: targetEmail,
-    });
+      console.error(
+        "Firebase Authentication deletion failed:",
+        firebaseError,
+      );
+
+      /**
+       * If Auth deletion fails, return an error.
+       * Firestore cleanup may already have happened,
+       * so the UI should report the actual failure.
+       */
+      throw error;
+    }
+
+    /**
+     * Successful response.
+     */
+    const response = NextResponse.json(
+      {
+        success: true,
+        message: "User permanently deleted.",
+        uid,
+        email: targetEmail,
+        cleanup: cleanupResults,
+      },
+      {
+        status: 200,
+      },
+    );
 
     response.headers.set(
       "Cache-Control",
@@ -280,9 +428,8 @@ export async function DELETE(request: Request) {
       error,
     );
 
-    const firebaseError = error as {
-      message?: string;
-    };
+    const firebaseError =
+      error as FirebaseAuthError;
 
     const message = String(
       firebaseError?.message ||
@@ -292,13 +439,25 @@ export async function DELETE(request: Request) {
     const lowerMessage =
       message.toLowerCase();
 
-    const status = lowerMessage.includes(
-      "unauthorized",
-    )
-      ? 401
-      : lowerMessage.includes("forbidden")
-        ? 403
-        : 500;
+    let status = 500;
+
+    if (
+      lowerMessage.includes("unauthorized") ||
+      lowerMessage.includes("invalid authentication") ||
+      lowerMessage.includes("token")
+    ) {
+      status = 401;
+    } else if (
+      lowerMessage.includes("forbidden") ||
+      lowerMessage.includes("admin access")
+    ) {
+      status = 403;
+    } else if (
+      firebaseError?.code ===
+      "auth/user-not-found"
+    ) {
+      status = 404;
+    }
 
     return NextResponse.json(
       {
@@ -309,6 +468,7 @@ export async function DELETE(request: Request) {
         status,
         headers: {
           "Cache-Control": "no-store",
+          "Pragma": "no-cache",
         },
       },
     );
