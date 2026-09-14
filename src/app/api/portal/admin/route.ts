@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-
-import {
-  getAdminAuth,
-  getAdminDb,
-} from "@/lib/firebase-admin";
+import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -13,19 +9,16 @@ type DecodedAdmin = {
   email: string;
 };
 
-async function verifyAdmin(
-  request: Request,
-): Promise<DecodedAdmin> {
+async function verifyAdmin(request: Request): Promise<DecodedAdmin> {
   const adminAuth = getAdminAuth();
   const adminDb = getAdminDb();
 
-  const authorization =
-    request.headers.get("authorization");
+  // ---------------------------------------------------------
+  // 1. Get Firebase ID token from Authorization header
+  // ---------------------------------------------------------
+  const authorization = request.headers.get("authorization");
 
-  if (
-    !authorization ||
-    !authorization.startsWith("Bearer ")
-  ) {
+  if (!authorization?.startsWith("Bearer ")) {
     throw new Error(
       "Unauthorized access. Firebase ID token is missing.",
     );
@@ -36,16 +29,16 @@ async function verifyAdmin(
     .trim();
 
   if (!token) {
-    throw new Error(
-      "Authentication token is empty.",
-    );
+    throw new Error("Authentication token is empty.");
   }
 
+  // ---------------------------------------------------------
+  // 2. Verify Firebase ID token
+  // ---------------------------------------------------------
   let decodedToken;
 
   try {
-    decodedToken =
-      await adminAuth.verifyIdToken(token);
+    decodedToken = await adminAuth.verifyIdToken(token);
   } catch (error) {
     console.error(
       "Firebase ID token verification failed:",
@@ -57,13 +50,9 @@ async function verifyAdmin(
     );
   }
 
-  const uid = String(
-    decodedToken.uid || "",
-  ).trim();
+  const uid = String(decodedToken.uid || "").trim();
 
-  const email = String(
-    decodedToken.email || "",
-  )
+  const email = String(decodedToken.email || "")
     .trim()
     .toLowerCase();
 
@@ -79,99 +68,154 @@ async function verifyAdmin(
     );
   }
 
-  /*
-   * =========================================================
-   * 1. FIRST CHECK:
-   * admins/{uid}
-   * =========================================================
-   */
+  // ---------------------------------------------------------
+  // 3. Environment variables
+  // ---------------------------------------------------------
+  const primaryAdminUid = String(
+    process.env.PORTAL_ADMIN_UID || "",
+  ).trim();
 
-  const adminByUidRef = adminDb
-    .collection("admins")
-    .doc(uid);
+  const primaryAdminEmail = String(
+    process.env.YOUR_PRIMARY_ADMIN_EMAIL || "",
+  )
+    .trim()
+    .toLowerCase();
 
-  const adminByUid =
-    await adminByUidRef.get();
+  // ---------------------------------------------------------
+  // 4. Primary admin check
+  //
+  // PORTAL_ADMIN_UID has highest priority.
+  // Email is also supported as a fallback.
+  // ---------------------------------------------------------
+  const isPrimaryAdminByUid =
+    Boolean(primaryAdminUid) &&
+    uid === primaryAdminUid;
 
-  if (adminByUid.exists) {
-    const data = adminByUid.data() || {};
+  const isPrimaryAdminByEmail =
+    Boolean(primaryAdminEmail) &&
+    email === primaryAdminEmail;
 
-    const active =
-      data.active !== false;
+  if (isPrimaryAdminByUid || isPrimaryAdminByEmail) {
+    console.log("Admin authorized via environment:", {
+      uid,
+      email,
+      matchedBy: isPrimaryAdminByUid
+        ? "PORTAL_ADMIN_UID"
+        : "YOUR_PRIMARY_ADMIN_EMAIL",
+    });
 
-    const role = String(
-      data.role || "admin",
-    )
-      .trim()
-      .toLowerCase();
-
-    if (active && role === "admin") {
-      return {
-        uid,
-        email,
-      };
-    }
+    return {
+      uid,
+      email,
+    };
   }
 
-  /*
-   * =========================================================
-   * 2. SECOND CHECK:
-   * admins collection by email
-   * =========================================================
-   */
+  // ---------------------------------------------------------
+  // 5. Firestore admins/{uid} check
+  //
+  // This allows additional admins to be stored in Firestore.
+  // ---------------------------------------------------------
+  try {
+    const adminByUidRef = adminDb
+      .collection("admins")
+      .doc(uid);
 
-  const emailSnapshot = await adminDb
-    .collection("admins")
-    .where("email", "==", email)
-    .limit(1)
-    .get();
+    const adminByUid = await adminByUidRef.get();
 
-  if (!emailSnapshot.empty) {
-    const adminDoc =
-      emailSnapshot.docs[0];
+    if (adminByUid.exists) {
+      const data = adminByUid.data() || {};
 
-    const data = adminDoc.data() || {};
+      const active = data.active !== false;
 
-    const storedUid = String(
-      data.uid || adminDoc.id || "",
-    ).trim();
+      const role = String(
+        data.role || "admin",
+      )
+        .trim()
+        .toLowerCase();
 
-    const active =
-      data.active !== false;
+      if (active && role === "admin") {
+        console.log(
+          "Admin authorized via Firestore UID:",
+          {
+            uid,
+            email,
+          },
+        );
 
-    const role = String(
-      data.role || "admin",
-    )
-      .trim()
-      .toLowerCase();
-
-    if (
-      active &&
-      role === "admin" &&
-      storedUid === uid
-    ) {
-      return {
-        uid,
-        email,
-      };
+        return {
+          uid,
+          email,
+        };
+      }
     }
+
+    // -------------------------------------------------------
+    // 6. Firestore admins collection email check
+    // -------------------------------------------------------
+    const emailSnapshot = await adminDb
+      .collection("admins")
+      .where("email", "==", email)
+      .limit(1)
+      .get();
+
+    if (!emailSnapshot.empty) {
+      const adminDoc = emailSnapshot.docs[0];
+      const data = adminDoc.data() || {};
+
+      const storedUid = String(
+        data.uid || adminDoc.id || "",
+      ).trim();
+
+      const active = data.active !== false;
+
+      const role = String(
+        data.role || "admin",
+      )
+        .trim()
+        .toLowerCase();
+
+      if (
+        active &&
+        role === "admin" &&
+        storedUid === uid
+      ) {
+        console.log(
+          "Admin authorized via Firestore email:",
+          {
+            uid,
+            email,
+          },
+        );
+
+        return {
+          uid,
+          email,
+        };
+      }
+    }
+  } catch (error) {
+    console.error(
+      "Firestore admin lookup failed:",
+      error,
+    );
+
+    throw new Error(
+      "Unable to verify admin permissions.",
+    );
   }
 
-  /*
-   * =========================================================
-   * ADMIN NOT FOUND
-   * =========================================================
-   */
-
+  // ---------------------------------------------------------
+  // 7. Admin not found
+  // ---------------------------------------------------------
   console.error(
     "Admin authorization failed:",
     {
       uid,
       email,
-      adminByUidExists:
-        adminByUid.exists,
-      emailMatchCount:
-        emailSnapshot.size,
+      primaryAdminUidConfigured:
+        Boolean(primaryAdminUid),
+      primaryAdminEmailConfigured:
+        Boolean(primaryAdminEmail),
     },
   );
 
@@ -180,22 +224,18 @@ async function verifyAdmin(
   );
 }
 
-/*
- * =========================================================
- * GET ADMIN USERS
- * =========================================================
- */
+// ============================================================
+// GET ADMIN USERS
+// ============================================================
 
-export async function GET(
-  request: Request,
-) {
+export async function GET(request: Request) {
   try {
+    // Verify admin before returning users
     await verifyAdmin(request);
 
     const adminDb = getAdminDb();
 
-    const { searchParams } =
-      new URL(request.url);
+    const { searchParams } = new URL(request.url);
 
     const page = Math.max(
       1,
@@ -209,51 +249,50 @@ export async function GET(
       Math.max(
         1,
         Number(
-          searchParams.get("pageSize") ||
-            "20",
+          searchParams.get("pageSize") || "20",
         ),
       ),
     );
 
-    /*
-     * Fetch portal users.
-     *
-     * Change "portalUsers" to "users"
-     * only if your actual Firestore collection
-     * is named users.
-     */
+    // ---------------------------------------------------------
+    // Fetch portal users
+    // ---------------------------------------------------------
     const snapshot = await adminDb
       .collection("portalUsers")
       .get();
 
-    const users = snapshot.docs.map(
-      (doc) => {
-        const data = doc.data();
+    const users = snapshot.docs.map((doc) => {
+      const data = doc.data();
 
-        return {
-          id: doc.id,
-          uid: String(
-            data.uid || doc.id,
-          ),
-          email:
-            data.email || "",
-          fullName:
-            data.fullName ||
-            data.name ||
-            "",
-          phone:
-            data.phone ||
-            data.phoneNumber ||
-            "",
-          role:
-            data.role ||
-            "user",
-          createdAt:
-            data.createdAt || null,
-          ...data,
-        };
-      },
-    );
+      return {
+        id: doc.id,
+
+        uid: String(
+          data.uid || doc.id,
+        ),
+
+        email: data.email || "",
+
+        fullName:
+          data.fullName ||
+          data.name ||
+          "",
+
+        phone:
+          data.phone ||
+          data.phoneNumber ||
+          "",
+
+        role:
+          data.role ||
+          "user",
+
+        createdAt:
+          data.createdAt || null,
+
+        ...data,
+      };
+    });
 
     const total = users.length;
 
@@ -266,21 +305,23 @@ export async function GET(
         start + pageSize,
       );
 
-    const response =
-      NextResponse.json({
-        success: true,
-        users: paginatedUsers,
-        data: paginatedUsers,
-        pagination: {
-          page,
-          pageSize,
-          total,
-          totalPages:
-            Math.ceil(
-              total / pageSize,
-            ),
-        },
-      });
+    const response = NextResponse.json({
+      success: true,
+
+      users: paginatedUsers,
+
+      data: paginatedUsers,
+
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages:
+          Math.ceil(
+            total / pageSize,
+          ),
+      },
+    });
 
     response.headers.set(
       "Cache-Control",
