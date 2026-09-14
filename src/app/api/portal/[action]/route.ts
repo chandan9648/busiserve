@@ -427,8 +427,13 @@ async function handle(request: Request, context: Context) {
 
     console.error("Portal request failed:", error);
 
+    const errorMessage =
+      error instanceof Error && error.message.includes("Firebase")
+        ? error.message
+        : "The server could not complete the request.";
+
     return json(
-      { error: "The server could not complete the request." },
+      { error: errorMessage },
       500,
     );
   }

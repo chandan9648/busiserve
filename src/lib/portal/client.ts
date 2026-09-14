@@ -91,25 +91,32 @@ export async function portalApi<T>(
     cache: "no-store",
   });
 
-  const data: unknown = await response.json().catch(() => {
-    throw new Error(
-      "The server returned an unexpected response. Check the terminal logs.",
-    );
-  });
+  const text = await response.text();
+  let data: unknown = null;
+
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // Server returned non-JSON text
+    }
+  }
 
   if (!response.ok) {
-    const message =
+    const errorMsg =
       typeof data === "object" &&
       data !== null &&
       "error" in data &&
-      typeof data.error === "string"
-        ? data.error
-        : "The request failed.";
+      typeof (data as { error: unknown }).error === "string"
+        ? (data as { error: string }).error
+        : text && text.length < 200
+          ? text
+          : `Server returned error (${response.status}). Please try again later.`;
 
-    throw new Error(message);
+    throw new Error(errorMsg);
   }
 
-  return data as T;
+  return (data ?? {}) as T;
 }
 
 export function errorMessage(error: unknown) {

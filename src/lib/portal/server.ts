@@ -49,28 +49,46 @@ export function requiredEnv(name: string) {
 function adminApp() {
   const name = "busiserve-portal-admin";
 
-  return (
-    getApps().find(
-      (app) => app.name === name,
-    ) ??
-    initializeApp(
-      {
-        credential: cert({
-          projectId: requiredEnv(
-            "FIREBASE_PROJECT_ID",
-          ),
+  const existing = getApps().find(
+    (app) => app.name === name,
+  );
+  if (existing) {
+    return existing;
+  }
 
-          clientEmail: requiredEnv(
-            "FIREBASE_CLIENT_EMAIL",
-          ),
+  const projectId =
+    process.env.FIREBASE_PROJECT_ID?.trim() ||
+    process.env.FIREBASE_ADMIN_PROJECT_ID?.trim();
 
-          privateKey: requiredEnv(
-            "FIREBASE_PRIVATE_KEY",
-          ).replace(/\\n/g, "\n"),
-        }),
-      },
-      name,
-    )
+  const clientEmail =
+    process.env.FIREBASE_CLIENT_EMAIL?.trim() ||
+    process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim();
+
+  const rawKey =
+    process.env.FIREBASE_PRIVATE_KEY ||
+    process.env.FIREBASE_ADMIN_PRIVATE_KEY ||
+    "";
+
+  const privateKey = rawKey
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/\\n/g, "\n");
+
+  if (!projectId || !clientEmail || !privateKey) {
+    throw new Error(
+      "Missing Firebase Admin configuration: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, or FIREBASE_PRIVATE_KEY",
+    );
+  }
+
+  return initializeApp(
+    {
+      credential: cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
+    },
+    name,
   );
 }
 
