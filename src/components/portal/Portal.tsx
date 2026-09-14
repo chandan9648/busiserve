@@ -166,14 +166,27 @@ const secondary =
 const input =
   "mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-2 focus:outline-orange-500";
 
+// This account is the primary administrator and must never appear as a customer.
+const PRIMARY_ADMIN_EMAIL = "chandankkumar156@gmail.com";
+
+function isAdminCustomer(user: { uid?: string; email?: string }, currentAdminUid: string) {
+  const email = String(user.email || "").trim().toLowerCase();
+  return (
+    user.uid === currentAdminUid ||
+    email === PRIMARY_ADMIN_EMAIL
+  );
+}
+
 /* -------------------------------------------------------------------------- */
 /* Portal                                                                     */
 /* -------------------------------------------------------------------------- */
 
 export default function Portal({
   admin = false,
+  profileOnly = false,
 }: {
   admin?: boolean;
+  profileOnly?: boolean;
 }) {
   const router = useRouter();
 
@@ -211,7 +224,7 @@ export default function Portal({
               return;
             }
 
-            if (admin && result.role !== "admin") {
+            if ((admin || profileOnly) && result.role !== "admin") {
               router.replace("/dashboard");
               return;
             }
@@ -233,7 +246,7 @@ export default function Portal({
       cancelled = true;
       unsubscribe();
     };
-  }, [admin, router]);
+  }, [admin, profileOnly, router]);
 
   async function logout() {
     try {
@@ -261,16 +274,32 @@ export default function Portal({
     );
   }
 
+  const isAdminPage = admin || profileOnly;
+
   return (
-    <main className="min-h-screen bg-slate-50 py-10 text-[#001b40]">
+    <main
+      className={`min-h-screen py-10 ${
+        isAdminPage
+          ? "bg-[#060d1a] text-white"
+          : "bg-slate-50 text-[#001b40]"
+      }`}
+    >
       <div className="container-site space-y-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-orange-700">
+            <p
+              className={`text-xs font-bold uppercase tracking-widest ${
+                isAdminPage ? "text-indigo-400" : "text-orange-700"
+              }`}
+            >
               Busiserve portal
             </p>
 
-            <h1 className="mt-2 text-3xl font-extrabold">
+            <h1
+              className={`mt-2 text-3xl font-extrabold ${
+                isAdminPage ? "text-white" : "text-[#001b40]"
+              }`}
+            >
               {admin
                 ? "Admin dashboard"
                 : `Hello, ${me.profile.name}`}
@@ -280,7 +309,11 @@ export default function Portal({
           <nav className="flex flex-wrap gap-3">
             <Link
               href="/dashboard"
-              className={secondary}
+              className={
+                isAdminPage
+                  ? "inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/20 transition"
+                  : secondary
+              }
             >
               My account
             </Link>
@@ -288,7 +321,11 @@ export default function Portal({
             {me.role === "admin" && (
               <Link
                 href="/admin"
-                className={secondary}
+                className={
+                  isAdminPage
+                    ? "inline-flex items-center justify-center rounded-xl border border-indigo-500/40 bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-300 backdrop-blur-sm hover:bg-indigo-500/30 transition"
+                    : secondary
+                }
               >
                 Admin
               </Link>
@@ -297,7 +334,11 @@ export default function Portal({
             <button
               type="button"
               onClick={logout}
-              className={secondary}
+              className={
+                isAdminPage
+                  ? "inline-flex items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-400 backdrop-blur-sm hover:bg-rose-500/20 transition"
+                  : secondary
+              }
             >
               Sign out
             </button>
@@ -305,11 +346,13 @@ export default function Portal({
         </header>
 
         {message && (
-          <p role="status">{message}</p>
+          <p role="status" className={isAdminPage ? "text-white/70" : ""}>{message}</p>
         )}
 
         {admin ? (
-          <AdminDashboard />
+          <AdminDashboard currentAdminUid={me.profile.uid} />
+        ) : me.role === "admin" ? (
+          <AdminProfile me={me} />
         ) : (
           <UserDashboard
             me={me}
@@ -318,6 +361,133 @@ export default function Portal({
         )}
       </div>
     </main>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Admin profile                                                              */
+/* -------------------------------------------------------------------------- */
+
+function AdminProfile({
+  me,
+}: {
+  me: MeResponse;
+}) {
+  const name =
+    me.profile?.name?.trim() || "Administrator";
+
+  const email =
+    me.profile?.email?.trim() || "—";
+
+  const phone =
+    me.profile?.phone?.trim() || "—";
+
+  return (
+    <section className="space-y-6">
+
+      {/* PROFILE HEADER */}
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-orange-700">
+              Administrator
+            </p>
+
+            <h2 className="mt-2 text-2xl font-extrabold text-[#001b40]">
+              My Profile
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-600">
+              Administrator account information.
+            </p>
+          </div>
+
+          <div className="rounded-full bg-orange-100 px-4 py-2 text-sm font-bold text-orange-800">
+            ADMIN
+          </div>
+        </div>
+      </section>
+
+      {/* PERSONAL INFORMATION */}
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+
+        <h3 className="text-xl font-bold text-[#001b40]">
+          Personal details
+        </h3>
+
+        <div className="mt-6 grid gap-5 md:grid-cols-2">
+
+          {/* NAME */}
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Full name
+            </p>
+
+            <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              {name}
+            </div>
+          </div>
+
+          {/* EMAIL */}
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Email
+            </p>
+
+            <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 break-all">
+              {email}
+            </div>
+          </div>
+
+          {/* PHONE */}
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Phone
+            </p>
+
+            <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              {phone}
+            </div>
+          </div>
+
+          {/* ROLE */}
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Account role
+            </p>
+
+            <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold capitalize">
+              Administrator
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ADMIN NOTICE */}
+
+      <section className="rounded-2xl border border-orange-200 bg-orange-50 p-6">
+
+        <h3 className="font-bold text-[#001b40]">
+          Administrator account
+        </h3>
+
+        <p className="mt-2 text-sm leading-6 text-slate-700">
+          This account is an administrator account.
+          Subscription plans, checkout and payment
+          history are available only for customer accounts.
+        </p>
+
+      </section>
+
+    </section>
   );
 }
 
@@ -823,7 +993,11 @@ function ProfileForm({
 /* Admin dashboard                                                            */
 /* -------------------------------------------------------------------------- */
 
-function AdminDashboard() {
+function AdminDashboard({
+  currentAdminUid,
+}: {
+  currentAdminUid: string;
+}) {
   const [data, setData] =
     useState<AdminResponse | null>(null);
 
@@ -836,7 +1010,7 @@ function AdminDashboard() {
 
     try {
       const result = await portalApi<AdminResponse>(
-        `admin?page=${page}`,
+        `admin?page=${page}&_t=${Date.now()}`,
       );
 
       setData(result);
@@ -850,34 +1024,109 @@ function AdminDashboard() {
 
   useEffect(() => {
     void load();
+
+    // Refresh admin statistics and user data automatically so newly
+    // registered users/payments appear without a manual page refresh.
+    const interval = window.setInterval(() => {
+      void load();
+    }, 5000);
+
+    return () => window.clearInterval(interval);
   }, [load]);
 
+  // Never expose an administrator as a customer.
+  // We check both UID and the primary admin email so the admin stays hidden
+  // even if the backend returns a stale/duplicate admin profile record.
+  const visibleUsers = data
+    ? data.users.filter(
+        (user) => !isAdminCustomer(user, currentAdminUid),
+      )
+    : [];
+
+  // Do not access data.totalUsers until after the null check below.
+  // The API is also responsible for excluding admin accounts from totals.
   if (!data) {
     return (
-      <p role="status">
-        {message || "Loading admin dashboard…"}
-      </p>
+      <section className="rounded-2xl border border-slate-200 bg-white p-8">
+        <p role="status">
+          {message || "Loading admin dashboard…"}
+        </p>
+
+        {message && (
+          <button
+            type="button"
+            onClick={() => void load()}
+            disabled={busy}
+            className={`${secondary} mt-4`}
+          >
+            Retry
+          </button>
+        )}
+      </section>
     );
   }
+
+  // The backend total already excludes administrators. Do not subtract 1 here.
+  const visibleTotalUsers = data.totalUsers;
+  const visibleActiveUsers = data.activeUsers;
+  const visibleExpiredUsers = data.expiredUsers;
 
   const stats = [
     {
       label: "Registered portal users",
-      value: data.totalUsers,
+      value: visibleTotalUsers,
     },
     {
       label: "Active subscriptions",
-      value: data.activeUsers,
+      value: visibleActiveUsers,
     },
     {
       label: "Users with expired plans",
-      value: data.expiredUsers,
+      value: visibleExpiredUsers,
     },
     {
       label: "Gross captured payments",
       value: formatMoney(data.totalRevenue),
     },
   ];
+
+  async function deleteUser(user: AdminResponse["users"][number]) {
+    if (busy) return;
+
+    if (isAdminCustomer(user, currentAdminUid)) {
+      setMessage("Administrator accounts cannot be deleted from customer management.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `PERMANENT DELETE WARNING\n\nDelete ${user.name || user.email} permanently?\n\nThis will remove the Firebase Authentication account and the user's portal profile. This action cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    const finalConfirmed = window.confirm(
+      `FINAL CONFIRMATION\n\nPermanently delete ${user.email}?\n\nPress OK only if you are completely sure.`,
+    );
+
+    if (!finalConfirmed) return;
+
+    setBusy(true);
+    setMessage("");
+
+    try {
+      await portalApi(
+        `admin/delete-user?uid=${encodeURIComponent(user.uid)}`,
+        "DELETE",
+      );
+
+      setMessage(`User ${user.email} permanently deleted.`);
+      await load();
+    } catch (error) {
+      setMessage(errorMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <>
@@ -886,62 +1135,55 @@ function AdminDashboard() {
           type="button"
           onClick={load}
           disabled={busy}
-          className={secondary}
+          className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 disabled:opacity-50"
         >
-          {busy
-            ? "Refreshing…"
-            : "Refresh dashboard"}
+          <svg
+            className={`h-4 w-4 ${busy ? "animate-spin" : ""}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {busy ? "Refreshing…" : "Refresh dashboard"}
         </button>
 
         {message && (
-          <p role="status">{message}</p>
+          <p role="status" className="text-sm text-white/70">{message}</p>
         )}
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((stat) => (
-          <section
-            key={stat.label}
-            className="rounded-2xl border bg-white p-6"
-          >
-            <p className="text-sm text-slate-600">
-              {stat.label}
-            </p>
-
-            <p className="mt-3 text-3xl font-extrabold">
-              {stat.value}
-            </p>
-          </section>
-        ))}
       </div>
 
       <AdminCharts data={data} />
 
-      <section className="rounded-2xl border bg-white p-6">
-        <h2 className="text-xl font-bold">
-          Users and current plans
-        </h2>
-
-        <p className="mt-2 text-sm text-slate-600">
-          Update completed change counts after fulfilling
-          a user’s requests.
-        </p>
+      <section className="rounded-2xl border border-white/10 bg-[#0d1a2e] p-6 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-white">
+              Users &amp; current plans
+            </h2>
+            <p className="mt-1 text-sm text-white/50">
+              Update completed change counts after fulfilling a user&apos;s requests.
+            </p>
+          </div>
+          <span className="rounded-full bg-indigo-500/20 px-3 py-1 text-xs font-semibold text-indigo-300">
+            {visibleUsers.length} user{visibleUsers.length !== 1 ? "s" : ""}
+          </span>
+        </div>
 
         <div className="mt-5 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b">
+              <tr className="border-b border-white/10">
                 {[
                   "User",
                   "Phone",
                   "Active plan",
                   "Expires",
                   "Changes used",
+                  "Action",
                 ].map((label) => (
                   <th
                     key={label}
                     scope="col"
-                    className="p-3"
+                    className="p-3 text-xs font-semibold uppercase tracking-wider text-white/40"
                   >
                     {label}
                   </th>
@@ -950,34 +1192,39 @@ function AdminDashboard() {
             </thead>
 
             <tbody>
-              {data.users.map((user) => (
+              {visibleUsers.map((user) => (
                 <tr
                   key={user.uid}
-                  className="border-b align-top"
+                  className="border-b border-white/5 align-top transition hover:bg-white/5"
                 >
                   <td className="p-3">
-                    <p className="font-semibold">
+                    <p className="font-semibold text-white">
                       {user.name}
                     </p>
-                    <p className="text-slate-500">
+                    <p className="text-xs text-white/40">
                       {user.email}
                     </p>
                   </td>
 
-                  <td className="p-3">
+                  <td className="p-3 text-white/70">
                     {user.phone || "—"}
                   </td>
 
                   <td className="p-3">
-                    {user.active?.planName ||
-                      "No active plan"}
+                    {user.active?.planName ? (
+                      <span className="rounded-full bg-emerald-500/20 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+                        {user.active.planName}
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/40">None</span>
+                    )}
                   </td>
 
-                  <td className="p-3">
+                  <td className="p-3 text-white/70">
                     {user.active
                       ? formatDate(
-                          user.active.expiresAt,
-                        )
+                        user.active.expiresAt,
+                      )
                       : "—"}
                   </td>
 
@@ -989,8 +1236,19 @@ function AdminDashboard() {
                         onSaved={load}
                       />
                     ) : (
-                      "—"
+                      <span className="text-white/30">—</span>
                     )}
+                  </td>
+
+                  <td className="p-3">
+                    <button
+                      type="button"
+                      onClick={() => void deleteUser(user)}
+                      disabled={busy}
+                      className="inline-flex items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-bold text-rose-400 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -1005,12 +1263,12 @@ function AdminDashboard() {
             onClick={() =>
               setPage(data.page - 1)
             }
-            className={secondary}
+            className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-40"
           >
-            Previous
+            ← Previous
           </button>
 
-          <span>
+          <span className="text-sm text-white/50">
             Page {data.page} of {data.totalPages}
           </span>
 
@@ -1023,9 +1281,9 @@ function AdminDashboard() {
             onClick={() =>
               setPage(data.page + 1)
             }
-            className={secondary}
+            className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-40"
           >
-            Next
+            Next →
           </button>
         </div>
       </section>
@@ -1083,16 +1341,16 @@ function UsageEditor({
           onChange={(event) =>
             setUsed(Number(event.target.value))
           }
-          className="w-20 rounded-lg border px-3 py-2"
+          className="w-20 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           required
         />
 
-        <span>/ {subscription.allowance}</span>
+        <span className="text-white/50">/ {subscription.allowance}</span>
 
         <button
           type="submit"
           disabled={busy}
-          className={secondary}
+          className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20 disabled:opacity-50"
         >
           {busy ? "Saving…" : "Save"}
         </button>
@@ -1101,7 +1359,7 @@ function UsageEditor({
       {message && (
         <p
           role="status"
-          className="mt-2 text-xs"
+          className="mt-2 text-xs text-emerald-400"
         >
           {message}
         </p>

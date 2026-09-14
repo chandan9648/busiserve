@@ -1,10 +1,9 @@
 import Portal from "@/components/portal/Portal";
 
 export const metadata = {
-  title: "Admin Dashboard",
-  robots: { index: false, follow: false },
+  title: "Admin Profile",
 };
 
-export default function AdminPage() {
-  return <Portal admin />;
+export default function AdminProfilePage() {
+  return <Portal admin profileOnly />;
 }

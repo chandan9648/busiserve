@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { Manrope, Hanken_Grotesk } from "next/font/google";
+
+import {
+  Manrope,
+  Hanken_Grotesk,
+} from "next/font/google";
 
 import "./globals.css";
 
@@ -24,8 +28,10 @@ export const metadata: Metadata = {
     default: "Busiserve — Digital Solutions",
     template: "%s | Busiserve",
   },
+
   description:
     "Scalable web, app, CMS and CRM development services for startups and enterprises.",
+
   icons: {
     icon: "/favicon.svg",
   },
@@ -41,13 +47,13 @@ export default function RootLayout({
       <body
         className={`${manrope.variable} ${hanken.variable}`}
       >
+        <ToastProvider />
+
         <Header />
 
         {children}
 
         <Footer />
-
-        <ToastProvider />
       </body>
     </html>
   );

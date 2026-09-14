@@ -40,12 +40,16 @@ export type AdminResponse = {
   activeUsers: number;
   expiredUsers: number;
   totalRevenue: number;
+
   planCounts: number[];
+
   monthlyRevenue: {
     label: string;
     amount: number;
   }[];
+
   users: AdminUser[];
+
   page: number;
   totalPages: number;
   serverNow: number;
@@ -54,8 +58,14 @@ export type AdminResponse = {
 export function subscriptionStatus(
   subscription: Subscription,
   now: number,
-) {
-  if (now < subscription.startsAt) return "Scheduled";
-  if (now >= subscription.expiresAt) return "Expired";
+): "Scheduled" | "Expired" | "Active" {
+  if (now < subscription.startsAt) {
+    return "Scheduled";
+  }
+
+  if (now >= subscription.expiresAt) {
+    return "Expired";
+  }
+
   return "Active";
 }
