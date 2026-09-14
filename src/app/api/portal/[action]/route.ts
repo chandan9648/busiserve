@@ -126,18 +126,34 @@ async function webhook(request: Request) {
 }
 
 async function handle(request: Request, context: Context) {
+  const requestId = randomUUID();
+  let stage = "params";
+  let actionName = "unknown";
+
   try {
     const { action } = await context.params;
+    actionName = ["me", "profile", "order", "verify", "usage", "admin", "webhook"].includes(action)
+      ? action
+      : "unknown";
+    if (action === "me") {
+      console.info("Portal request started", { requestId, action: actionName });
+    }
 
     if (action === "webhook" && request.method === "POST") {
+      stage = "webhook";
       return await webhook(request);
     }
 
+    stage = "authenticate";
     const token = await authenticate(request);
+    stage = "action-handler";
 
     if (action === "me" && request.method === "GET") {
+      stage = "ensureProfile";
       const profile = await ensureProfile(token);
+      stage = "userSubscriptions";
       const subscriptions = await userSubscriptions(token.uid);
+      stage = "me-response";
 
       return json({
         profile,
@@ -414,26 +430,39 @@ async function handle(request: Request, context: Context) {
 
     return json({ error: "Endpoint not found." }, 404);
   } catch (error) {
+    // Log only controlled metadata, never tokens, credentials or profile data.
+    const rawCode =
+      typeof error === "object" && error !== null && "code" in error
+        ? error.code
+        : undefined;
+    const code =
+      typeof rawCode === "number" && Number.isFinite(rawCode)
+        ? rawCode
+        : typeof rawCode === "string" && /^[a-zA-Z0-9/_-]{1,80}$/.test(rawCode)
+          ? rawCode
+          : "unknown";
+
+    console.error("Portal request failed", {
+      requestId,
+      action: actionName,
+      stage,
+      code,
+      status: error instanceof PortalError ? error.status : error instanceof z.ZodError ? 400 : 500,
+    });
+
     if (error instanceof z.ZodError) {
       return json(
-        { error: error.issues[0]?.message || "Invalid input." },
+        { error: error.issues[0]?.message || "Invalid input.", requestId },
         400,
       );
     }
 
     if (error instanceof PortalError) {
-      return json({ error: error.message }, error.status);
+      return json({ error: error.message, requestId }, error.status);
     }
 
-    console.error("Portal request failed:", error);
-
-    const errorMessage =
-      error instanceof Error && error.message.includes("Firebase")
-        ? error.message
-        : "The server could not complete the request.";
-
     return json(
-      { error: errorMessage },
+      { error: "The server could not complete the request.", requestId },
       500,
     );
   }
