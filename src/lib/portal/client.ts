@@ -6,46 +6,32 @@ import { getAuth } from "firebase/auth";
 const APP_NAME = "busiserve-portal";
 
 function getFirebaseConfig() {
-  // Keep direct process.env references so Next.js can expose
-  // these public variables to the browser.
+  // These exact public variables are exposed by the existing next.config.ts.
   const config = {
     apiKey: process.env.FIREBASE_API_KEY?.trim(),
-    authDomain:
-      process.env.FIREBASE_AUTH_DOMAIN?.trim(),
-    projectId:
-      process.env.FIREBASE_PROJECT_ID?.trim(),
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN?.trim(),
+    projectId: process.env.FIREBASE_PROJECT_ID?.trim(),
     appId: process.env.FIREBASE_APP_ID?.trim(),
   };
-
   const required = [
     ["FIREBASE_API_KEY", config.apiKey],
     ["FIREBASE_AUTH_DOMAIN", config.authDomain],
     ["FIREBASE_PROJECT_ID", config.projectId],
     ["FIREBASE_APP_ID", config.appId],
   ] as const;
-
-  const missing = required
-    .filter(([, value]) => !value)
-    .map(([name]) => name);
-
+  const missing = required.filter(([, value]) => !value).map(([name]) => name);
   if (missing.length > 0) {
     throw new Error(
       `Missing Firebase browser configuration: ${missing.join(", ")}. ` +
-        "Check .env.local and restart the development server.",
+        "Check environment variables and rebuild/redeploy the application.",
     );
   }
-
   return config;
 }
 
 export function portalAuth() {
   const config = getFirebaseConfig();
-
-  const existingApp = getApps().find(
-    (item) => item.name === APP_NAME,
-  );
-
-  // Firebase may retain its initialized app during hot reload.
+  const existingApp = getApps().find((item) => item.name === APP_NAME);
   if (
     existingApp &&
     (existingApp.options.apiKey !== config.apiKey ||
@@ -58,11 +44,7 @@ export function portalAuth() {
         "Restart the development server and fully reload the browser.",
     );
   }
-
-  const app =
-    existingApp ?? initializeApp(config, APP_NAME);
-
-  return getAuth(app);
+  return getAuth(existingApp ?? initializeApp(config, APP_NAME));
 }
 
 export async function portalApi<T>(
@@ -70,57 +52,72 @@ export async function portalApi<T>(
   method = "GET",
   body?: unknown,
 ): Promise<T> {
-  const user = portalAuth().currentUser;
+  const auth = portalAuth();
+  // Wait for persisted login restoration before deciding that no user exists.
+  await auth.authStateReady();
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please sign in.");
 
-  if (!user) {
-    throw new Error("Please sign in.");
-  }
-
-  const token = await user.getIdToken();
+  const requestMethod = method.toUpperCase();
   const hasBody = body !== undefined;
+  const send = async (forceRefresh: boolean) => {
+    const token = await user.getIdToken(forceRefresh);
+    return fetch(`/api/portal/${action}`, {
+      method: requestMethod,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(hasBody ? { "Content-Type": "application/json" } : {}),
+      },
+      body: hasBody ? JSON.stringify(body) : undefined,
+      cache: "no-store",
+    });
+  };
 
-  const response = await fetch(`/api/portal/${action}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(hasBody
-        ? { "Content-Type": "application/json" }
-        : {}),
-    },
-    body: hasBody ? JSON.stringify(body) : undefined,
-    cache: "no-store",
-  });
+  let response = await send(false);
+  // Retry only a read, once. Never replay payments or other mutations.
+  if (response.status === 401 && requestMethod === "GET") {
+    response = await send(true);
+  }
 
   const text = await response.text();
   let data: unknown = null;
-
   if (text) {
     try {
       data = JSON.parse(text);
     } catch {
-      // Server returned non-JSON text
+      // A function startup failure can return HTML/plain text instead of JSON.
     }
   }
 
   if (!response.ok) {
-    const errorMsg =
-      typeof data === "object" &&
-      data !== null &&
-      "error" in data &&
-      typeof (data as { error: unknown }).error === "string"
-        ? (data as { error: string }).error
-        : text && text.length < 200
-          ? text
-          : `Server returned error (${response.status}). Please try again later.`;
+    const payload =
+      typeof data === "object" && data !== null
+        ? (data as Record<string, unknown>)
+        : null;
+    const requestId =
+      typeof payload?.requestId === "string" &&
+      /^[a-zA-Z0-9-]{1,80}$/.test(payload.requestId)
+        ? payload.requestId
+        : null;
+    const message =
+      typeof payload?.error === "string" && payload.error.length <= 300
+        ? payload.error
+        : response.status === 401
+          ? "Session expired. Please sign in again."
+          : response.status === 403
+            ? "You do not have permission to perform this action."
+            : "The server could not complete the request. Please try again later.";
 
-    throw new Error(errorMsg);
+    throw new Error(requestId ? `${message} Reference: ${requestId}` : message);
   }
 
-  return (data ?? {}) as T;
+  if (response.status === 204) return {} as T;
+  if (data === null) {
+    throw new Error("The server returned an unexpected response. Please try again.");
+  }
+  return data as T;
 }
 
 export function errorMessage(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : "Something went wrong. Please try again.";
+  return error instanceof Error ? error.message : "Something went wrong. Please try again.";
 }

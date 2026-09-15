@@ -1,17 +1,11 @@
 import "server-only";
 
+import { type DecodedIdToken } from "firebase-admin/auth";
 import {
-  cert,
-  getApps,
-  initializeApp,
-} from "firebase-admin/app";
-
-import {
-  getAuth,
-  type DecodedIdToken,
-} from "firebase-admin/auth";
-
-import { getFirestore } from "firebase-admin/firestore";
+  FirebaseConfigurationError,
+  getAdminAuth,
+  getAdminDb,
+} from "@/lib/firebase-admin";
 
 import {
   createHmac,
@@ -46,54 +40,8 @@ export function requiredEnv(name: string) {
   return value;
 }
 
-function adminApp() {
-  const name = "busiserve-portal-admin";
-
-  const existing = getApps().find(
-    (app) => app.name === name,
-  );
-  if (existing) {
-    return existing;
-  }
-
-  const projectId =
-    process.env.FIREBASE_PROJECT_ID?.trim() ||
-    process.env.FIREBASE_ADMIN_PROJECT_ID?.trim();
-
-  const clientEmail =
-    process.env.FIREBASE_CLIENT_EMAIL?.trim() ||
-    process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim();
-
-  const rawKey =
-    process.env.FIREBASE_PRIVATE_KEY ||
-    process.env.FIREBASE_ADMIN_PRIVATE_KEY ||
-    "";
-
-  const privateKey = rawKey
-    .trim()
-    .replace(/^["']|["']$/g, "")
-    .replace(/\\n/g, "\n");
-
-  if (!projectId || !clientEmail || !privateKey) {
-    throw new Error(
-      "Missing Firebase Admin configuration: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, or FIREBASE_PRIVATE_KEY",
-    );
-  }
-
-  return initializeApp(
-    {
-      credential: cert({
-        projectId,
-        clientEmail,
-        privateKey,
-      }),
-    },
-    name,
-  );
-}
-
 export function db() {
-  return getFirestore(adminApp());
+  return getAdminDb();
 }
 
 /**
@@ -121,33 +69,77 @@ export function isAdmin(uid: string) {
   return adminUids.includes(uid);
 }
 
-export async function authenticate(
-  request: Request,
-) {
-  const authorization =
-    request.headers.get("authorization");
+export async function authenticate(request: Request): Promise<DecodedIdToken> {
+  const authorization = request.headers.get("authorization");
+  const match = authorization?.match(/^Bearer\s+(\S+)$/i);
 
-  if (
-    !authorization?.startsWith("Bearer ")
-  ) {
-    throw new PortalError(
-      "Authentication required.",
-      401,
-    );
+  if (!match) {
+    throw new PortalError("Authentication required.", 401);
   }
 
+  // Configuration failures must remain server errors, not "session expired".
+  const auth = getAdminAuth();
   try {
-    return await getAuth(
-      adminApp(),
-    ).verifyIdToken(
-      authorization.slice(7),
-      true,
-    );
-  } catch {
-    throw new PortalError(
-      "Session expired. Please sign in again.",
-      401,
-    );
+    return await auth.verifyIdToken(match[1], true);
+  } catch (error) {
+    const code = safeErrorCode(error);
+    if (code === "auth/user-disabled") {
+      throw new PortalError("This account is disabled. Please contact support.", 403);
+    }
+    if (
+      [
+        "auth/id-token-expired",
+        "auth/id-token-revoked",
+        "auth/invalid-id-token",
+        "auth/argument-error",
+        "auth/user-not-found",
+      ].includes(String(code))
+    ) {
+      throw new PortalError("Session expired or invalid. Please sign in again.", 401);
+    }
+    throw error;
+  }
+}
+
+export function safeErrorCode(error: unknown): string | number {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return "unknown";
+  }
+  const code = error.code;
+  if (typeof code === "number" && Number.isFinite(code)) return code;
+  return typeof code === "string" && /^[a-zA-Z0-9/_-]{1,80}$/.test(code)
+    ? code
+    : "unknown";
+}
+
+// All text returned here is controlled; raw SDK errors and credentials stay private.
+export function serverDiagnostic(error: unknown): string {
+  if (error instanceof FirebaseConfigurationError) return error.message;
+  switch (safeErrorCode(error)) {
+    case 7:
+    case "permission-denied":
+    case "PERMISSION_DENIED":
+      return "Check the service account's Firestore IAM permissions and whether the Firestore API is enabled for the configured project.";
+    case 5:
+    case "not-found":
+    case "NOT_FOUND":
+      return "Check FIREBASE_PROJECT_ID and FIREBASE_DATABASE_ID against the existing Firestore database.";
+    case 9:
+    case "failed-precondition":
+    case "FAILED_PRECONDITION":
+      return "Check Firestore database state and required indexes for the failing operation.";
+    case 4:
+    case 14:
+    case "deadline-exceeded":
+    case "unavailable":
+      return "Firestore timed out or is unavailable. Check service status and function connectivity.";
+    case "auth/insufficient-permission":
+      return "The service account cannot access Firebase Authentication. Check its IAM permissions.";
+    case "app/invalid-credential":
+    case "auth/invalid-credential":
+      return "Check the active service account key, client email, and project configuration.";
+    default:
+      return "Inspect this request's stage and the surrounding Vercel function logs.";
   }
 }
 
@@ -195,7 +187,10 @@ export async function ensureProfile(
   );
 
   const snapshot = await ref.get();
-  const data = snapshot.data()!;
+  const data = snapshot.data();
+  if (!data) {
+    throw new PortalError("Profile is unavailable. Please try again.", 409);
+  }
 
   return {
     uid: token.uid,

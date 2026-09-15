@@ -19,6 +19,8 @@ import {
   requireAdmin,
   requiredEnv,
   signatureMatches,
+  safeErrorCode,
+  serverDiagnostic,
   userSubscriptions,
 } from "@/lib/portal/server";
 
@@ -431,22 +433,14 @@ async function handle(request: Request, context: Context) {
     return json({ error: "Endpoint not found." }, 404);
   } catch (error) {
     // Log only controlled metadata, never tokens, credentials or profile data.
-    const rawCode =
-      typeof error === "object" && error !== null && "code" in error
-        ? error.code
-        : undefined;
-    const code =
-      typeof rawCode === "number" && Number.isFinite(rawCode)
-        ? rawCode
-        : typeof rawCode === "string" && /^[a-zA-Z0-9/_-]{1,80}$/.test(rawCode)
-          ? rawCode
-          : "unknown";
+    const code = safeErrorCode(error);
 
     console.error("Portal request failed", {
       requestId,
       action: actionName,
       stage,
       code,
+      diagnostic: serverDiagnostic(error),
       status: error instanceof PortalError ? error.status : error instanceof z.ZodError ? 400 : 500,
     });
 
