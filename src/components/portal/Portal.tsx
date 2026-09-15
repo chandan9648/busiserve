@@ -1005,9 +1005,7 @@ function AdminDashboard({
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
-    setBusy(true);
-
+  const fetchData = useCallback(async () => {
     try {
       const result = await portalApi<AdminResponse>(
         `admin?page=${page}&_t=${Date.now()}`,
@@ -1017,22 +1015,51 @@ function AdminDashboard({
       setMessage("");
     } catch (error) {
       setMessage(errorMessage(error));
-    } finally {
-      setBusy(false);
     }
   }, [page]);
 
+  const load = useCallback(async () => {
+    setBusy(true);
+
+    try {
+      await fetchData();
+    } finally {
+      setBusy(false);
+    }
+  }, [fetchData]);
+
   useEffect(() => {
-    void load();
+    let active = true;
+
+    const syncData = async () => {
+      try {
+        const result = await portalApi<AdminResponse>(
+          `admin?page=${page}&_t=${Date.now()}`,
+        );
+        if (active) {
+          setData(result);
+          setMessage("");
+        }
+      } catch (error) {
+        if (active) {
+          setMessage(errorMessage(error));
+        }
+      }
+    };
+
+    void syncData();
 
     // Refresh admin statistics and user data automatically so newly
     // registered users/payments appear without a manual page refresh.
     const interval = window.setInterval(() => {
-      void load();
+      void syncData();
     }, 5000);
 
-    return () => window.clearInterval(interval);
-  }, [load]);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [page]);
 
   // Never expose an administrator as a customer.
   // We check both UID and the primary admin email so the admin stays hidden

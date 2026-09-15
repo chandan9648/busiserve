@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 type CaseStudyCardProps = {
   category: string;
@@ -21,13 +22,13 @@ export default function CaseStudyCard({
   return (
     <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#dce3ec] bg-white shadow-sm transition-[border-color,box-shadow] duration-300 hover:border-[#e8a571] hover:shadow-lg focus-within:border-[#964900] motion-reduce:transition-none">
       <div className="relative aspect-[16/10] shrink-0 overflow-hidden border-b border-[#e5ebf2] bg-[#eef3fa]">
-        <img
+        <Image
           src={image}
           alt={imageAlt ?? title}
           width={800}
           height={500}
           loading="lazy"
-          decoding="async"
+          unoptimized
           className="h-full w-full object-cover transition-transform duration-500 ease-out motion-safe:group-hover:scale-105 motion-reduce:transition-none"
         />
 

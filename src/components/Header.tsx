@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
@@ -106,12 +107,13 @@ export default function Header() {
           aria-label="Busiserve home"
         >
           <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden sm:h-[72px] sm:w-[72px]">
-            <img
+            <Image
               src="/logo.svg"
               alt=""
               aria-hidden="true"
               width={114}
               height={114}
+              priority
               className="block h-full w-full shrink-0 scale-[1.65] object-contain"
             />
           </span>

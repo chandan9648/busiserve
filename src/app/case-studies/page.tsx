@@ -11,7 +11,7 @@ export default function CaseStudiesPage() {
         <div className="container-site">
           <h1 className="text-4xl font-extrabold tracking-tight text-[#001b40] md:text-5xl">Proven Results. Measurable Impact.</h1>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-7 text-[#434750]">
-            Explore how we've partnered with industry leaders to overcome complex challenges, streamline operations, and drive scalable growth through structured innovation.
+            Explore how we&apos;ve partnered with industry leaders to overcome complex challenges, streamline operations, and drive scalable growth through structured innovation.
           </p>
         </div>
       </section>

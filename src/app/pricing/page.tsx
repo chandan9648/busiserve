@@ -17,7 +17,7 @@ export default function PricingPage() {
       <section className="bg-[#f1f4f7] py-20">
         <div className="container-site text-center">
           <h2 className="text-3xl font-bold text-[#001b40]">Frequently Asked Questions</h2>
-          <p className="mt-3 text-[#434750]">Need more details? We're here to help you make the right choice.</p>
+          <p className="mt-3 text-[#434750]">Need more details? We&apos;re here to help you make the right choice.</p>
           <FAQ />
         </div>
       </section>

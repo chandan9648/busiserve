@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, BarChart3, Bot, Building2, Check, Cloud, Code2, Gamepad2, Globe2, LayoutGrid, ShieldCheck, Smartphone, Users, Workflow } from "lucide-react";
 import { prototypeImages, services } from "@/lib/site-data";
 
@@ -84,7 +85,7 @@ export default function HomePage() {
           </div>
           <figure className="bs-hero-visual">
             <div className="bs-image-frame">
-              <img src={prototypeImages.homeHero} alt="Team collaborating on a digital project" width={640} height={560} fetchPriority="high" className="bs-hero-image" />
+              <Image src={prototypeImages.homeHero} alt="Team collaborating on a digital project" width={640} height={560} priority unoptimized className="bs-hero-image" />
             </div>
             <figcaption className="bs-image-caption"><span className="bs-caption-icon" aria-hidden="true"><LayoutGrid size={22} /></span><span><strong>From idea to everyday impact.</strong><span>Development · Integration · Automation</span></span></figcaption>
           </figure>

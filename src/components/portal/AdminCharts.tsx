@@ -323,7 +323,10 @@ function BarChart({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const frame = requestAnimationFrame(() => {
+      setMounted(true);
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   const safeLabels = Array.isArray(labels)
@@ -596,13 +599,16 @@ function LineChart({
     H - padTop - padBottom;
 
   useEffect(() => {
-    setMounted(true);
+    const frame = requestAnimationFrame(() => {
+      setMounted(true);
 
-    if (pathRef.current) {
-      setPathLen(
-        pathRef.current.getTotalLength(),
-      );
-    }
+      if (pathRef.current) {
+        setPathLen(
+          pathRef.current.getTotalLength(),
+        );
+      }
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   if (count === 0) {
@@ -813,7 +819,10 @@ function DonutChart({
     useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const frame = requestAnimationFrame(() => {
+      setMounted(true);
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   const items =
@@ -848,8 +857,6 @@ function DonutChart({
   const circumference =
     2 * Math.PI * r;
 
-  let offset = 0;
-
   const slices = items.map(
     (item, index) => {
       const percentage =
@@ -861,10 +868,12 @@ function DonutChart({
       const gap =
         circumference - dash;
 
-      const rotation =
-        offset * 360 - 90;
+      const previousPercentageSum = items
+        .slice(0, index)
+        .reduce((sum, prev) => sum + prev.count / total, 0);
 
-      offset += percentage;
+      const rotation =
+        previousPercentageSum * 360 - 90;
 
       return {
         ...item,
