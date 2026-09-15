@@ -317,9 +317,44 @@ export async function DELETE(
       );
     }
 
+    // Also block deletion of the primary admin email from env
+    const envAdminEmail = String(
+      process.env.YOUR_PRIMARY_ADMIN_EMAIL || "",
+    ).trim().toLowerCase();
+
+    if (
+      (envAdminEmail && targetEmail === envAdminEmail) ||
+      targetEmail === "chandankkumar156@gmail.com"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Administrator accounts cannot be deleted from customer management.",
+        },
+        {
+          status: 403,
+          headers: {
+            "Cache-Control": "no-store",
+          },
+        },
+      );
+    }
+
     /**
-     * Delete the user's Firestore profile.
+     * Delete the user's Firestore portalUsers profile.
      */
+    const portalUserRef = adminDb
+      .collection("portalUsers")
+      .doc(uid);
+
+    const portalUserDoc = await portalUserRef.get();
+
+    if (portalUserDoc.exists) {
+      await portalUserRef.delete();
+    }
+
+    // Also try legacy "users" collection
     const userRef = adminDb
       .collection("users")
       .doc(uid);
@@ -339,6 +374,7 @@ export async function DELETE(
      * uid
      */
     const cleanupTargets = [
+      ["portalSubscriptions", "uid"],
       ["subscriptions", "userId"],
       ["subscriptions", "uid"],
     ] as const;

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Eye, Target, MessageSquare, Layers, Users } from "lucide-react";
 import { prototypeImages, team } from "@/lib/site-data";
 
@@ -31,7 +32,7 @@ export default function AboutPage() {
             </div>
           </div>
           <figure className="overflow-hidden rounded-2xl border border-[#dce3ec] bg-white">
-            <img src={prototypeImages.aboutHero} alt="People collaborating in a meeting" width={640} height={560} fetchPriority="high" className="aspect-[8/7] w-full object-cover" />
+            <Image src={prototypeImages.aboutHero} alt="People collaborating in a meeting" width={640} height={560} priority unoptimized className="aspect-[8/7] w-full object-cover" />
             <figcaption className="flex items-start gap-4 border-t border-[#dce3ec] p-6">
               <span className="mt-1 h-10 w-1 shrink-0 rounded-full bg-[#ff8927]" aria-hidden="true" />
               <div><p className="font-bold">Good work starts with understanding.</p><p className="mt-1 text-sm leading-6 text-[#434750]">Your goals. Your users. Your next step.</p></div>
@@ -85,7 +86,7 @@ export default function AboutPage() {
               {team.map((member) => (
                 <article key={member.name} className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#dce3ec] bg-white">
                   <div className="aspect-[4/5] overflow-hidden bg-[#eef3fa]">
-                    <img src={member.image} alt={member.name} width={480} height={600} loading="lazy" decoding="async" className="h-full w-full object-cover object-top transition-transform duration-500 motion-safe:group-hover:scale-105 motion-reduce:transition-none" />
+                    <Image src={member.image} alt={member.name} width={480} height={600} loading="lazy" unoptimized className="h-full w-full object-cover object-top transition-transform duration-500 motion-safe:group-hover:scale-105 motion-reduce:transition-none" />
                   </div>
                   <div className="flex-1 border-t border-[#e5ebf2] p-5"><h3 className="break-words text-lg font-bold tracking-tight">{member.name}</h3><p className="mt-2 break-words text-xs font-semibold uppercase leading-6 tracking-[0.08em] text-[#964900]">{member.role}</p></div>
                 </article>

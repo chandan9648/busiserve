@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, BarChart3, Bot, Building2, Check, Cloud, Code2, Gamepad2, Globe2, LayoutGrid, ShieldCheck, Smartphone, Users, Workflow, type LucideIcon } from "lucide-react";
 import { prototypeImages, approach } from "@/lib/site-data";
 import QuoteForm from "@/components/QuoteForm";
@@ -71,7 +72,7 @@ export default function ServicesPage() {
             </div>
           </div>
           <div className="overflow-hidden rounded-2xl border border-[#dce3ec] bg-white shadow-sm">
-            <img src={prototypeImages.servicesHero} alt="Team discussing a digital project" width={640} height={460} fetchPriority="high" className="aspect-[4/3] w-full object-cover" />
+            <Image src={prototypeImages.servicesHero} alt="Team discussing a digital project" width={640} height={460} priority unoptimized className="aspect-[4/3] w-full object-cover" />
             <div className="grid gap-4 p-6 sm:grid-cols-[1fr_auto] sm:items-center">
               <div><p className="text-xs font-bold uppercase tracking-widest text-[#964900]">Your starting point</p><p className="mt-2 text-lg font-bold">What should work better?</p></div>
               <a href="#quote" aria-label="Discuss what should work better in your business" className={`flex h-12 w-12 items-center justify-center rounded-full bg-[#ff8927] text-[#001b40] hover:bg-[#ffac69] ${focus}`}><ArrowRight size={21} aria-hidden="true" /></a>
