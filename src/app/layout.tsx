@@ -8,7 +8,6 @@ import {
 import "./globals.css";
 
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import ToastProvider from "@/components/providers/ToastProvider";
 
 const manrope = Manrope({
@@ -52,8 +51,6 @@ export default function RootLayout({
         <Header />
 
         {children}
-
-        <Footer />
       </body>
     </html>
   );
