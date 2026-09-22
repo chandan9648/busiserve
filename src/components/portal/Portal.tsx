@@ -1271,7 +1271,7 @@ function AdminDashboard({
           type="button"
           onClick={load}
           disabled={busy}
-          className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 disabled:opacity-50"
+          className="inline-flex items-center cursor-pointer gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 disabled:opacity-50"
         >
           <svg
             className={`h-4 w-4 ${busy ? "animate-spin" : ""}`}
