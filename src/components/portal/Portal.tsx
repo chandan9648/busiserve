@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type FormEvent,
 } from "react";
@@ -129,7 +130,16 @@ function loadCheckout(): Promise<void> {
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
 
+    const timeout = window.setTimeout(() => {
+      script.onload = null;
+      script.onerror = null;
+      script.remove();
+      checkoutLoader = null;
+      reject(new Error("Payment checkout timed out. Check your connection and try again."));
+    }, 15000);
+
     script.onload = () => {
+      window.clearTimeout(timeout);
       if (getRazorpayConstructor()) {
         resolve();
       } else {
@@ -141,6 +151,7 @@ function loadCheckout(): Promise<void> {
     };
 
     script.onerror = () => {
+      window.clearTimeout(timeout);
       script.remove();
       checkoutLoader = null;
 
@@ -336,7 +347,7 @@ export default function Portal({
               onClick={logout}
               className={
                 isAdminPage
-                  ? "inline-flex items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-400 backdrop-blur-sm hover:bg-rose-500/20 transition"
+                  ? "inline-flex items-center justify-center cursor-pointer rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-400 backdrop-blur-sm hover:bg-rose-500/20 transition"
                   : secondary
               }
             >
@@ -504,6 +515,17 @@ function UserDashboard({
 }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [selectedPlanId, setSelectedPlanId] = useState<PlanId | null>(null);
+  const detailsRef = useRef<HTMLElement | null>(null);
+  const checkoutInProgress = useRef(false);
+  const selectedPlan = selectedPlanId ? PLANS[selectedPlanId] : null;
+
+  useEffect(() => {
+    if (selectedPlanId) {
+      detailsRef.current?.focus({ preventScroll: true });
+      detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [selectedPlanId]);
 
   const active = me.subscriptions.find(
     (item) =>
@@ -560,10 +582,19 @@ function UserDashboard({
   }
 
   async function buy(planId: PlanId) {
+    if (busy || checkoutInProgress.current) return;
+    checkoutInProgress.current = true;
     setBusy(true);
     setMessage("");
 
     try {
+      const user = portalAuth().currentUser;
+      if (!user) throw new Error("Please sign in again.");
+      await user.reload();
+      await user.getIdToken(true);
+      if (!user.emailVerified) {
+        throw new Error("Verify your email, then select Refresh account before payment.");
+      }
       await loadCheckout();
 
       const RazorpayCheckout = getRazorpayConstructor();
@@ -615,6 +646,7 @@ function UserDashboard({
                 response,
               );
 
+              setSelectedPlanId(null);
               await reload();
 
               setMessage(
@@ -625,6 +657,7 @@ function UserDashboard({
                 `${errorMessage(error)} If money was debited, do not pay again; refresh shortly or contact support.`,
               );
             } finally {
+              checkoutInProgress.current = false;
               setBusy(false);
             }
           })();
@@ -633,6 +666,7 @@ function UserDashboard({
         modal: {
           ondismiss: () => {
             if (!verificationStarted) {
+              checkoutInProgress.current = false;
               setBusy(false);
 
               setMessage(
@@ -651,6 +685,7 @@ function UserDashboard({
 
       checkout.open();
     } catch (error) {
+      checkoutInProgress.current = false;
       setMessage(errorMessage(error));
       setBusy(false);
     }
@@ -685,7 +720,7 @@ function UserDashboard({
           type="button"
           onClick={refresh}
           disabled={busy}
-          className={secondary}
+          className={secondary + "cursor-pointer"}
         >
           Refresh account
         </button>
@@ -792,8 +827,16 @@ function UserDashboard({
 
               <button
                 type="button"
-                onClick={() => buy(plan.id)}
-                disabled={busy || !me.emailVerified}
+                onClick={() => {
+                  setMessage("");
+                  setSelectedPlanId(plan.id);
+                  if (selectedPlanId === plan.id) {
+                    detailsRef.current?.focus({ preventScroll: true });
+                    detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+                aria-controls="selected-plan-details"
+                disabled={busy}
                 className={`${button} mt-6 w-full`}
               >
                 {busy
@@ -804,6 +847,69 @@ function UserDashboard({
           ))}
         </div>
       </section>
+
+      {selectedPlan && (
+        <section
+          id="selected-plan-details"
+          ref={detailsRef}
+          tabIndex={-1}
+          aria-labelledby="selected-plan-title"
+          className="scroll-mt-24 rounded-2xl border border-orange-200 bg-white p-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 md:p-8"
+        >
+          <p className="text-xs font-bold uppercase tracking-widest text-orange-700">
+            Review your plan
+          </p>
+          <h2 id="selected-plan-title" className="mt-2 text-2xl font-extrabold">
+            {selectedPlan.name} plan
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600">{selectedPlan.description}</p>
+          <dl className="mt-6 grid gap-4 rounded-xl bg-slate-50 p-5 sm:grid-cols-2">
+            <div><dt className="text-sm text-slate-500">Plan price</dt>
+              <dd className="mt-1 text-2xl font-bold">{formatMoney(selectedPlan.amount)}</dd></div>
+            <div><dt className="text-sm text-slate-500">Duration</dt>
+              <dd className="mt-1 font-semibold">One calendar month</dd></div>
+            <div><dt className="text-sm text-slate-500">Included changes</dt>
+              <dd className="mt-1 font-semibold">{selectedPlan.changes} small changes</dd></div>
+            <div><dt className="text-sm text-slate-500">Renewal</dt>
+              <dd className="mt-1 font-semibold">A separate purchase for each period</dd></div>
+          </dl>
+          <p className="mt-4 text-sm leading-7 text-slate-600">
+            An early renewal starts after your existing paid periods finish.
+            Unused changes do not roll over. Review the final amount in payment checkout.
+          </p>
+          <div className="mt-6 border-t border-slate-200 pt-5">
+            <h3 className="font-bold">Account details</h3>
+            <p className="mt-2 text-sm">{me.profile.name}</p>
+            <p className="mt-1 break-all text-sm text-slate-600">{me.profile.email}</p>
+            <p className="mt-1 text-sm text-slate-600">Phone: {me.profile.phone || "Not added"}</p>
+            <p className="mt-2 text-xs text-slate-500">Update these in Personal details before payment if needed.</p>
+          </div>
+          {!me.emailVerified && (
+            <div className="mt-5 rounded-xl border border-orange-200 bg-orange-50 p-4">
+              <p className="text-sm font-semibold">Verify your email to continue to payment.</p>
+              <p className="mt-1 text-sm">Open the verification email, then refresh your account here.</p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <button type="button" className={secondary} onClick={resendVerification} disabled={busy}>
+                  Resend verification email
+                </button>
+                <button type="button" className={secondary} onClick={refresh} disabled={busy}>
+                  Refresh account
+                </button>
+              </div>
+            </div>
+          )}
+          {message && <p role="status" className="mt-5 rounded-xl bg-slate-100 p-4 text-sm">{message}</p>}
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button type="button" className={button} disabled={busy || !me.emailVerified}
+              onClick={() => void buy(selectedPlan.id)}>
+              {busy ? "Please wait…" : `Continue to payment · ${formatMoney(selectedPlan.amount)}`}
+            </button>
+            <button type="button" className={secondary} disabled={busy}
+              onClick={() => setSelectedPlanId(null)}>Cancel</button>
+          </div>
+          <p className="mt-3 text-xs text-slate-500">Payment opens securely with Razorpay.</p>
+        </section>
+      )}
 
       <section className="rounded-2xl border bg-white p-6">
         <h2 className="text-xl font-bold">
@@ -1005,24 +1111,25 @@ function AdminDashboard({
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    try {
-      const result = await portalApi<AdminResponse>(
-        `admin?page=${page}&_t=${Date.now()}`,
-      );
+  const requestVersion = useRef(0);
+  const deleting = useRef(false);
 
+  const fetchData = useCallback(async () => {
+    const version = ++requestVersion.current;
+    const result = await portalApi<AdminResponse>(`admin?page=${page}&_t=${Date.now()}`);
+    if (version === requestVersion.current) {
       setData(result);
-      setMessage("");
-    } catch (error) {
-      setMessage(errorMessage(error));
+      setPage(result.page);
     }
   }, [page]);
 
   const load = useCallback(async () => {
+    if (deleting.current) return;
     setBusy(true);
-
     try {
       await fetchData();
+    } catch (error) {
+      setMessage(errorMessage(error));
     } finally {
       setBusy(false);
     }
@@ -1030,33 +1137,26 @@ function AdminDashboard({
 
   useEffect(() => {
     let active = true;
-
     const syncData = async () => {
+      if (deleting.current) return;
+      const version = ++requestVersion.current;
       try {
-        const result = await portalApi<AdminResponse>(
-          `admin?page=${page}&_t=${Date.now()}`,
-        );
-        if (active) {
+        const result = await portalApi<AdminResponse>(`admin?page=${page}&_t=${Date.now()}`);
+        if (active && version === requestVersion.current && !deleting.current) {
           setData(result);
-          setMessage("");
+          setPage(result.page);
         }
       } catch (error) {
-        if (active) {
+        if (active && version === requestVersion.current && !deleting.current) {
           setMessage(errorMessage(error));
         }
       }
     };
-
     void syncData();
-
-    // Refresh admin statistics and user data automatically so newly
-    // registered users/payments appear without a manual page refresh.
-    const interval = window.setInterval(() => {
-      void syncData();
-    }, 5000);
-
+    const interval = window.setInterval(() => void syncData(), 5000);
     return () => {
       active = false;
+      ++requestVersion.current;
       window.clearInterval(interval);
     };
   }, [page]);
@@ -1118,7 +1218,7 @@ function AdminDashboard({
   ];
 
   async function deleteUser(user: AdminResponse["users"][number]) {
-    if (busy) return;
+    if (busy || deleting.current) return;
 
     if (isAdminCustomer(user, currentAdminUid)) {
       setMessage("Administrator accounts cannot be deleted from customer management.");
@@ -1137,6 +1237,8 @@ function AdminDashboard({
 
     if (!finalConfirmed) return;
 
+    deleting.current = true;
+    ++requestVersion.current;
     setBusy(true);
     setMessage("");
 
@@ -1147,10 +1249,17 @@ function AdminDashboard({
       );
 
       setMessage(`User ${user.email} permanently deleted.`);
-      await load();
+      // Do not show stale counts if the follow-up request fails.
+      setData(null);
+      try {
+        await fetchData();
+      } catch (refreshError) {
+        setMessage(`User deleted, but statistics could not refresh. Click Refresh. ${errorMessage(refreshError)}`);
+      }
     } catch (error) {
       setMessage(errorMessage(error));
     } finally {
+      deleting.current = false;
       setBusy(false);
     }
   }
@@ -1272,7 +1381,7 @@ function AdminDashboard({
                       type="button"
                       onClick={() => void deleteUser(user)}
                       disabled={busy}
-                      className="inline-flex items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-bold text-rose-400 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center justify-center cursor-pointer rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-bold text-rose-400 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Delete
                     </button>
@@ -1290,7 +1399,7 @@ function AdminDashboard({
             onClick={() =>
               setPage(data.page - 1)
             }
-            className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-40"
+            className="inline-flex items-center justify-center cursor-pointer rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-40"
           >
             ← Previous
           </button>
@@ -1308,7 +1417,7 @@ function AdminDashboard({
             onClick={() =>
               setPage(data.page + 1)
             }
-            className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-40"
+            className="inline-flex items-center justify-center cursor-pointer rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-40"
           >
             Next →
           </button>

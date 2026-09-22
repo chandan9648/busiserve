@@ -5,225 +5,48 @@ import type { Subscription, AdminUser } from "@/lib/portal/types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const runtime = "nodejs";
 
-type DecodedAdmin = {
-  uid: string;
-  email: string;
-};
+type AdminRecord = { id: string; data: Record<string, unknown> };
 
-async function verifyAdmin(request: Request): Promise<DecodedAdmin> {
-  const adminAuth = getAdminAuth();
-  const adminDb = getAdminDb();
+function configuredAdmin(uid: string, email: string): boolean {
+  const uids = [process.env.PORTAL_ADMIN_UID || "", ...(process.env.PORTAL_ADMIN_UIDS || "").split(",")];
+  const primaryEmail = (process.env.YOUR_PRIMARY_ADMIN_EMAIL || "").trim().toLowerCase();
+  return uids.some((value) => value.trim() === uid) || Boolean(email && primaryEmail === email.toLowerCase());
+}
 
-  // ---------------------------------------------------------
-  // 1. Get Firebase ID token from Authorization header
-  // ---------------------------------------------------------
-  const authorization = request.headers.get("authorization");
+function matchesAdmin(record: AdminRecord, uid: string, email: string): boolean {
+  const storedUid = String(record.data.uid || record.data.firebaseUid || "").trim();
+  // An explicitly bound UID must match; email alone must not override it.
+  if (storedUid) return storedUid === uid;
+  return record.id === uid || Boolean(email && (
+    String(record.data.email || "").trim().toLowerCase() === email.toLowerCase() ||
+    record.id.toLowerCase() === email.toLowerCase()
+  ));
+}
 
-  if (!authorization?.startsWith("Bearer ")) {
-    throw new Error(
-      "Unauthorized access. Firebase ID token is missing.",
-    );
+async function verifyAdmin(request: Request) {
+  const header = request.headers.get("authorization");
+  if (!header?.startsWith("Bearer ") || !header.slice(7).trim()) {
+    throw new Error("Unauthorized. Sign in again.");
   }
-
-  const token = authorization
-    .substring("Bearer ".length)
-    .trim();
-
-  if (!token) {
-    throw new Error("Authentication token is empty.");
-  }
-
-  // ---------------------------------------------------------
-  // 2. Verify Firebase ID token
-  // ---------------------------------------------------------
-  let decodedToken;
-
+  let decoded;
   try {
-    decodedToken = await adminAuth.verifyIdToken(token);
-  } catch (error) {
-    console.error(
-      "Firebase ID token verification failed:",
-      error,
-    );
-
-    throw new Error(
-      "Unauthorized. Invalid or expired Firebase token.",
-    );
+    decoded = await getAdminAuth().verifyIdToken(header.slice(7).trim(), true);
+  } catch {
+    throw new Error("Unauthorized. Invalid or expired session.");
   }
-
-  const uid = String(decodedToken.uid || "").trim();
-
-  const email = String(decodedToken.email || "")
-    .trim()
-    .toLowerCase();
-
-  if (!uid) {
-    throw new Error(
-      "Invalid Firebase token: UID missing.",
-    );
+  const uid = decoded.uid;
+  const email = String(decoded.email || "").trim().toLowerCase();
+  const snapshot = await getAdminDb().collection("admins").get();
+  const records: AdminRecord[] = snapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+  const matching = records.filter((record) => matchesAdmin(record, uid, decoded.email_verified ? email : ""));
+  const disabled = matching.some(({ data }) => data.active === false || data.enabled === false || data.disabled === true);
+  const allowed = matching.some(({ data }) => String(data.role || "admin").toLowerCase() === "admin");
+  if (disabled || !(configuredAdmin(uid, decoded.email_verified ? email : "") || allowed)) {
+    throw new Error("Forbidden. Admin access only.");
   }
-
-  if (!email) {
-    throw new Error(
-      "Invalid Firebase token: email missing.",
-    );
-  }
-
-  // ---------------------------------------------------------
-  // 3. Environment variables
-  // ---------------------------------------------------------
-  const primaryAdminUid = String(
-    process.env.PORTAL_ADMIN_UID || "",
-  ).trim();
-
-  const primaryAdminEmail = String(
-    process.env.YOUR_PRIMARY_ADMIN_EMAIL || "",
-  )
-    .trim()
-    .toLowerCase();
-
-  // ---------------------------------------------------------
-  // 4. Primary admin check
-  //
-  // PORTAL_ADMIN_UID has highest priority.
-  // Email is also supported as a fallback.
-  // ---------------------------------------------------------
-  const isPrimaryAdminByUid =
-    Boolean(primaryAdminUid) &&
-    uid === primaryAdminUid;
-
-  const isPrimaryAdminByEmail =
-    Boolean(primaryAdminEmail) &&
-    email === primaryAdminEmail;
-
-  if (isPrimaryAdminByUid || isPrimaryAdminByEmail) {
-    console.log("Admin authorized via environment:", {
-      uid,
-      email,
-      matchedBy: isPrimaryAdminByUid
-        ? "PORTAL_ADMIN_UID"
-        : "YOUR_PRIMARY_ADMIN_EMAIL",
-    });
-
-    return {
-      uid,
-      email,
-    };
-  }
-
-  // ---------------------------------------------------------
-  // 5. Firestore admins/{uid} check
-  //
-  // This allows additional admins to be stored in Firestore.
-  // ---------------------------------------------------------
-  try {
-    const adminByUidRef = adminDb
-      .collection("admins")
-      .doc(uid);
-
-    const adminByUid = await adminByUidRef.get();
-
-    if (adminByUid.exists) {
-      const data = adminByUid.data() || {};
-
-      const active = data.active !== false;
-
-      const role = String(
-        data.role || "admin",
-      )
-        .trim()
-        .toLowerCase();
-
-      if (active && role === "admin") {
-        console.log(
-          "Admin authorized via Firestore UID:",
-          {
-            uid,
-            email,
-          },
-        );
-
-        return {
-          uid,
-          email,
-        };
-      }
-    }
-
-    // -------------------------------------------------------
-    // 6. Firestore admins collection email check
-    // -------------------------------------------------------
-    const emailSnapshot = await adminDb
-      .collection("admins")
-      .where("email", "==", email)
-      .limit(1)
-      .get();
-
-    if (!emailSnapshot.empty) {
-      const adminDoc = emailSnapshot.docs[0];
-      const data = adminDoc.data() || {};
-
-      const storedUid = String(
-        data.uid || adminDoc.id || "",
-      ).trim();
-
-      const active = data.active !== false;
-
-      const role = String(
-        data.role || "admin",
-      )
-        .trim()
-        .toLowerCase();
-
-      if (
-        active &&
-        role === "admin" &&
-        storedUid === uid
-      ) {
-        console.log(
-          "Admin authorized via Firestore email:",
-          {
-            uid,
-            email,
-          },
-        );
-
-        return {
-          uid,
-          email,
-        };
-      }
-    }
-  } catch (error) {
-    console.error(
-      "Firestore admin lookup failed:",
-      error,
-    );
-
-    throw new Error(
-      "Unable to verify admin permissions.",
-    );
-  }
-
-  // ---------------------------------------------------------
-  // 7. Admin not found
-  // ---------------------------------------------------------
-  console.error(
-    "Admin authorization failed:",
-    {
-      uid,
-      email,
-      primaryAdminUidConfigured:
-        Boolean(primaryAdminUid),
-      primaryAdminEmailConfigured:
-        Boolean(primaryAdminEmail),
-    },
-  );
-
-  throw new Error(
-    "Forbidden. Admin access only.",
-  );
+  return { uid, email, records };
 }
 
 function parseTimestamp(val: unknown): number {
@@ -269,15 +92,12 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
 
-    const requestedPage = Math.max(
-      1,
-      Number(searchParams.get("page") || "1"),
-    );
-
-    const pageSize = Math.min(
-      100,
-      Math.max(1, Number(searchParams.get("pageSize") || "20")),
-    );
+    const positiveInt = (value: string | null, fallback: number) => {
+      const parsed = Number(value);
+      return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
+    };
+    const requestedPage = positiveInt(searchParams.get("page"), 1);
+    const pageSize = Math.min(100, positiveInt(searchParams.get("pageSize"), 20));
 
     // ---------------------------------------------------------
     // Fetch portal users & subscriptions concurrently
@@ -334,30 +154,9 @@ export async function GET(request: Request) {
     // Reads from PORTAL_ADMIN_UIDS (comma-separated list of UIDs)
     // and YOUR_PRIMARY_ADMIN_EMAIL environment variables.
     // ---------------------------------------------------------
-    const adminUidsEnv = String(process.env.PORTAL_ADMIN_UIDS || "").trim();
-    const adminUidSet = new Set(
-      adminUidsEnv
-        .split(",")
-        .map((v) => v.trim())
-        .filter(Boolean),
-    );
-    // Always include the currently logged-in admin's UID
-    adminUidSet.add(admin.uid);
-
-    const primaryAdminEmail = String(
-      process.env.YOUR_PRIMARY_ADMIN_EMAIL || "",
-    )
-      .trim()
-      .toLowerCase();
-
-    const isUserAdmin = (uid: string, email: string) => {
-      const lowerEmail = email.toLowerCase();
-      return (
-        adminUidSet.has(uid) ||
-        (Boolean(primaryAdminEmail) && lowerEmail === primaryAdminEmail) ||
-        lowerEmail === admin.email
-      );
-    };
+    const isUserAdmin = (uid: string, email: string) =>
+      uid === admin.uid || configuredAdmin(uid, email) ||
+      admin.records.some((record) => matchesAdmin(record, uid, email));
 
     // ---------------------------------------------------------
     // Build a map from Firestore portalUsers for quick lookup
@@ -391,7 +190,7 @@ export async function GET(request: Request) {
         // Prefer Firestore data if available (richer), otherwise use Auth data
         const existing = firestoreUserMap.get(fbUser.uid);
         allFirebaseUsers.push(
-          existing ?? {
+          existing ? { ...existing, email: fbUser.email || existing.email } : {
             uid: fbUser.uid,
             name: String(fbUser.displayName || ""),
             email: String(fbUser.email || ""),
@@ -414,6 +213,8 @@ export async function GET(request: Request) {
       (user) => !isUserAdmin(user.uid, user.email),
     );
 
+    const customerUids = new Set(displayUsers.map((user) => user.uid));
+    const customerActiveSubscriptions = activeSubscriptions.filter((item) => customerUids.has(item.uid));
     const totalUsers = displayUsers.length;
     const activeUsers = displayUsers.filter((u) => activeByUser.has(u.uid)).length;
     const expiredUsers = displayUsers.filter((u) => expiredUserIds.has(u.uid)).length;
@@ -478,11 +279,11 @@ export async function GET(request: Request) {
 
     const planDistribution = Object.values(PLANS).map((plan) => ({
       label: plan.name,
-      count: activeSubscriptions.filter((item) => item.planId === plan.id).length,
+      count: customerActiveSubscriptions.filter((item) => item.planId === plan.id).length,
     }));
 
     const planCounts = Object.keys(PLANS).map(
-      (id) => activeSubscriptions.filter((item) => item.planId === id).length,
+      (id) => customerActiveSubscriptions.filter((item) => item.planId === id).length,
     );
 
     // ---------------------------------------------------------
@@ -551,7 +352,8 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        message,
+        error: status === 500 ? "Failed to load admin users. Please retry." : message,
+        message: status === 500 ? "Failed to load admin users. Please retry." : message,
       },
       {
         status,
