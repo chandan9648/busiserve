@@ -6,12 +6,10 @@ import {
   Bot,
   Building2,
   Check,
-  Cloud,
   Code2,
   Gamepad2,
   Globe2,
   LayoutGrid,
-  ShieldCheck,
   Smartphone,
   Users,
   Workflow,
@@ -25,7 +23,7 @@ import Footer from "@/components/Footer";
 export const metadata = {
   title: "Services",
   description:
-    "Explore Busiserve’s product development, business software, cloud, cybersecurity, data and automation services.",
+    "Explore Busiserve’s product development, business software, data and automation services.",
 };
 
 type Solution = {
@@ -140,17 +138,6 @@ const categories: Category[] = [
       "Help applications work together while taking a considered approach to access, reliability and security.",
     items: [
       {
-        title: "Cloud Integration",
-        icon: Cloud,
-        description:
-          "Bring your cloud services and applications together with clear data flows and maintainable connections.",
-        deliverables: [
-          "Cloud application integration",
-          "Data synchronisation workflows",
-          "Deployment and configuration support",
-        ],
-      },
-      {
         title: "API Development",
         icon: Code2,
         description:
@@ -159,17 +146,6 @@ const categories: Category[] = [
           "Custom API endpoints",
           "Third-party service integrations",
           "Authentication and API documentation",
-        ],
-      },
-      {
-        title: "Cybersecurity",
-        icon: ShieldCheck,
-        description:
-          "Understand weaknesses in your applications and systems, then prioritise practical improvements.",
-        deliverables: [
-          "Application security assessments",
-          "Access and configuration reviews",
-          "Remediation guidance and hardening",
         ],
       },
     ],

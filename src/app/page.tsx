@@ -33,19 +33,9 @@ const additionalServices: HomeService[] = [
     icon: "building",
   },
   {
-    title: "Cybersecurity",
-    short: "Security Assessments, Application & Data Protection",
-    icon: "shield",
-  },
-  {
     title: "Game Design",
     short: "Game Concepts, Mechanics & Player Experiences",
     icon: "gamepad",
-  },
-  {
-    title: "Cloud Integration",
-    short: "Cloud Platforms, App & Data Integration",
-    icon: "cloud",
   },
   {
     title: "API Development",
@@ -206,9 +196,8 @@ export default function HomePage() {
               </div>
 
               <p>
-                From websites and enterprise software to cybersecurity,
-                cloud, data and AI, find the service that fits your next
-                move.
+                From websites and enterprise software to data and AI, find
+                the service that fits your next move.
               </p>
             </div>
 

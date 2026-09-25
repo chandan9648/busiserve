@@ -91,10 +91,11 @@ export const caseStudies = [
 ] as const;
 
 export const team = [
-  { name: "Sarah Jenkins", role: "CEO & Founder", image: prototypeImages.team1 },
-  { name: "Marcus Thorne", role: "Chief Technology Officer", image: prototypeImages.team2 },
-  { name: "Elena Rodriguez", role: "Head of Product", image: prototypeImages.team3 },
-  { name: "David Chen", role: "Lead Strategist", image: prototypeImages.team4 },
+  { name: "Sarfaraj Alam", role: "CEO", image: "/sarfaraj.svg" },
+  { name: "Chandan Chaudhary", role: "Founder", image: "/chandan.svg" },
+  { name: "Rahul Bhardwaj", role: "Chief Technology Officer", image: "/rahul.svg" },
+  { name: "Unknown", role: "Head of Product", image: prototypeImages.team3 },
+
 ] as const;
 
 export const pricingPlans = [
