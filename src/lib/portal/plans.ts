@@ -2,7 +2,7 @@ export const PLANS = {
   starter: {
     id: "starter",
     name: "Starter",
-    amount: 100,
+    amount: 199900,
     changes: 3,
     description: "Small updates for an existing website.",
   },
