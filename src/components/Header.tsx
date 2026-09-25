@@ -108,13 +108,13 @@ export default function Header() {
         >
           <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden sm:h-[72px] sm:w-[72px]">
             <Image
-              src="/logo.svg"
-              alt=""
+              src="/Busiserve_Infotech_Solution_logo1.svg"
+              alt="Busiserve logo"
               aria-hidden="true"
               width={114}
               height={114}
               priority
-              className="block h-full w-full shrink-0 scale-[1.65] object-contain"
+              className="block h-full w-full shrink-0 object-contain"
             />
           </span>
 

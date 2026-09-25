@@ -199,9 +199,9 @@ async function handle(request: Request, context: Context) {
         const snapshot = await transaction.get(userRef);
         const previous = Number(snapshot.data()?.lastOrderAt || 0);
 
-        if (Date.now() - previous < 60000) {
+        if (Date.now() - previous < 3000) {
           throw new PortalError(
-            "Please wait one minute before creating another checkout.",
+            "Please wait a few seconds before creating another checkout.",
             429,
           );
         }
