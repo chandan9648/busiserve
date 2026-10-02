@@ -24,7 +24,7 @@ const hanken = Hanken_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: "Busiserve — Digital Solutions",
+    default: "Busiserve — Infotech Solution",
     template: "%s | Busiserve",
   },
 

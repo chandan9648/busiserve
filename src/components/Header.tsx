@@ -125,7 +125,7 @@ export default function Header() {
             </span>
 
             <span className="mt-1.5 hidden whitespace-nowrap text-[8px] font-semibold leading-tight tracking-[0.045em] text-[#003066] min-[380px]:block sm:text-[9px]">
-              DIGITAL SOLUTIONS FOR GROWTH
+              Infotech Solution FOR GROWTH
             </span>
           </span> */}
         </Link>

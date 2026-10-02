@@ -14,7 +14,7 @@ export default function Footer() {
           </Link>
 
           <p className="mt-4 max-w-xs text-sm leading-6 text-[#d7e3ff]">
-            Delivering structured growth through expert digital solutions and
+            Delivering structured growth through expert Infotech Solution and
             professional engineering.
           </p>
 
@@ -129,23 +129,23 @@ export default function Footer() {
               LinkedIn
             </a>
 
-            <a
+            {/* <a
               href={process.env.TWITTER_URL ?? "#"}
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-white"
             >
               Twitter
-            </a>
+            </a> */}
 
-            <a
+            {/* <a
               href={process.env.GITHUB_URL ?? "#"}
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-white"
             >
               GitHub
-            </a>
+            </a> */}
           </div>
         </div>
       </div>
