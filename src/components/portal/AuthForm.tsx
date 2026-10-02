@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import {
+  loginRateLimit,
   portalApi,
   portalAuth,
 } from "@/lib/portal/client";
@@ -28,6 +29,21 @@ import {
 import type { MeResponse } from "@/lib/portal/types";
 
 type Mode = "login" | "register" | "reset";
+
+function waitLabel(milliseconds: number) {
+  const seconds = Math.max(
+    1,
+    Math.ceil(milliseconds / 1000),
+  );
+
+  if (seconds < 60) {
+    return `${seconds} second${seconds === 1 ? "" : "s"}`;
+  }
+
+  const minutes = Math.ceil(seconds / 60);
+
+  return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+}
 
 export default function AuthForm({
   mode,
@@ -55,6 +71,11 @@ export default function AuthForm({
     event.preventDefault();
 
     if (busy) return;
+
+    // Attempts left in the login token bucket, once it has answered,
+    // and how long the next attempt has to wait when none are left.
+    let attemptsLeft: number | null = null;
+    let nextWaitMs = 0;
 
     setBusy(true);
 
@@ -180,12 +201,44 @@ export default function AuthForm({
         return;
       }
 
+      // =====================================================
+      // RATE LIMIT
+      //
+      // 5 attempts per email + device address, then a
+      // 15 minute lock, for users and admins alike.
+      // =====================================================
+
+      const limit = await loginRateLimit(
+        "attempt",
+        cleanEmail,
+      );
+
+      if (!limit.allowed) {
+        toast.error(
+          `Too many login attempts. Please try again in ${waitLabel(
+            limit.retryAfterMs,
+          )}.`,
+        );
+        return;
+      }
+
+      attemptsLeft = limit.remaining;
+      nextWaitMs = limit.retryAfterMs;
+
       const credential =
         await signInWithEmailAndPassword(
           auth,
           cleanEmail,
           password,
         );
+
+      // A valid sign-in refills the bucket.
+      attemptsLeft = null;
+
+      await loginRateLimit(
+        "success",
+        cleanEmail,
+      );
 
       // Fresh token
       await credential.user.getIdToken(true);
@@ -244,7 +297,15 @@ export default function AuthForm({
         case "auth/wrong-password":
         case "auth/user-not-found":
           toast.error(
-            "Invalid email or password.",
+            attemptsLeft === null
+              ? "Invalid email or password."
+              : attemptsLeft > 0
+                ? `Invalid email or password. ${attemptsLeft} attempt${
+                    attemptsLeft === 1 ? "" : "s"
+                  } left.`
+                : `Invalid email or password. Too many attempts: please try again in ${waitLabel(
+                    nextWaitMs,
+                  )}.`,
           );
           break;
 

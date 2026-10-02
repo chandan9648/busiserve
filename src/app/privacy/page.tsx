@@ -118,7 +118,7 @@ export default function PrivacyPage() {
       <h2 className="mt-10 text-2xl font-bold text-[#001b40]">Contact us</h2>
       <p>
         For privacy questions or requests, contact Busiserve through our Contact
-        page or email <a href="mailto:hello@busiserve.in">hello@busiserve.in</a>.
+        page or email <a href="mailto:busiserveinfotechsolution@gmail.com">busiserveinfotechsolution@gmail.com</a>.
       </p>
     </main>
   );

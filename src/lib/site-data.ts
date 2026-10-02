@@ -185,7 +185,7 @@ export const approach = [
 ] as const;
 
 export const contactDefaults = {
-  email: process.env.CONTACT_EMAIL ?? "hello@busiserve.in",
+  email: process.env.CONTACT_EMAIL ?? "busiserveinfotechsolution@gmail.com",
   phone: process.env.CONTACT_PHONE ?? "+1 (800) 555-0199",
   address:
     process.env.CONTACT_ADDRESS ??

@@ -9,5 +9,10 @@ service cloud.firestore {
     match /quoteRequests/{document=**} {
       allow read, write: if false;
     }
+
+    // Login rate limit buckets are written only by the Admin SDK.
+    match /loginRateLimits/{document=**} {
+      allow read, write: if false;
+    }
   }
 }

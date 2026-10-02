@@ -13,6 +13,19 @@ html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-hanken), "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif; }
 h1,h2,h3,h4,h5,h6 { font-family: var(--font-manrope), "Manrope", ui-sans-serif, system-ui, sans-serif; }
 button,a,input,textarea,select { font: inherit; }
+/* Native controls show an arrow cursor, so every clickable one gets a hand.
+   Kept in the base layer, so Tailwind utilities such as
+   disabled:cursor-not-allowed still override it. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  select:not(:disabled),
+  input:where([type="button"], [type="reset"], [type="submit"], [type="checkbox"], [type="radio"]):not(:disabled) {
+    cursor: pointer;
+  }
+  ::file-selector-button { cursor: pointer; }
+}
 ::selection { background: var(--orange); color: var(--tertiary); }
 .container-site { width: min(1280px, calc(100% - 40px)); margin-inline: auto; }
 @media (min-width: 768px) { .container-site { width: min(1280px, calc(100% - 128px)); } }

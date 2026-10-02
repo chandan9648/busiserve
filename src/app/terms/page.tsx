@@ -161,7 +161,7 @@ export default function TermsPage() {
       <h2 className="mt-10 text-2xl font-bold text-[#001b40]">Contact us</h2>
       <p>
         Questions about these Terms can be sent through our Contact page or to
-        <a href="mailto:hello@busiserve.in"> hello@busiserve.in</a>.
+        <a href="mailto:busiserveinfotechsolution@gmail.com"> busiserveinfotechsolution@gmail.com</a>.
       </p>
     </main>
   );

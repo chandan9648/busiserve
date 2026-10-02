@@ -121,3 +121,65 @@ export async function portalApi<T>(
 export function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong. Please try again.";
 }
+
+export type LoginLimitState = {
+  allowed: boolean;
+  remaining: number;
+  retryAfterMs: number;
+};
+
+/**
+ * Login token bucket: "attempt" takes one of the five tokens before a
+ * password is checked, "success" refills the bucket. The server owns the
+ * counting; a guard that cannot answer must never block a real sign-in.
+ */
+export async function loginRateLimit(
+  stage: "attempt" | "success",
+  email: string,
+): Promise<LoginLimitState> {
+  const open: LoginLimitState = { allowed: true, remaining: 0, retryAfterMs: 0 };
+
+  try {
+    const response = await fetch("/api/auth/login-rate-limit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage, email }),
+      cache: "no-store",
+    });
+
+    let data: unknown = null;
+    try {
+      data = await response.json();
+    } catch {
+      // A function startup failure can return HTML instead of JSON.
+    }
+
+    const payload =
+      typeof data === "object" && data !== null
+        ? (data as Record<string, unknown>)
+        : null;
+
+    const count = (value: unknown, fallback: number) =>
+      typeof value === "number" && Number.isFinite(value) && value >= 0
+        ? value
+        : fallback;
+
+    if (response.status === 429) {
+      return {
+        allowed: false,
+        remaining: 0,
+        retryAfterMs: count(payload?.retryAfterMs, 15 * 60 * 1000),
+      };
+    }
+
+    if (!response.ok) return open;
+
+    return {
+      allowed: payload?.allowed !== false,
+      remaining: count(payload?.remaining, 0),
+      retryAfterMs: count(payload?.retryAfterMs, 0),
+    };
+  } catch {
+    return open;
+  }
+}
