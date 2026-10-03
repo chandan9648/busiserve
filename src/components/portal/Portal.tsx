@@ -10,10 +10,15 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
+  EmailAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   sendEmailVerification,
   signOut,
+  updatePassword,
 } from "firebase/auth";
+
+import { Eye, EyeOff } from "lucide-react";
 
 import {
   errorMessage,
@@ -363,7 +368,10 @@ export default function Portal({
         {admin ? (
           <AdminDashboard currentAdminUid={me.profile.uid} />
         ) : me.role === "admin" ? (
-          <AdminProfile me={me} />
+          <AdminProfile
+            me={me}
+            reload={reload}
+          />
         ) : (
           <UserDashboard
             me={me}
@@ -381,18 +389,11 @@ export default function Portal({
 
 function AdminProfile({
   me,
+  reload,
 }: {
   me: MeResponse;
+  reload: () => Promise<void>;
 }) {
-  const name =
-    me.profile?.name?.trim() || "Administrator";
-
-  const email =
-    me.profile?.email?.trim() || "—";
-
-  const phone =
-    me.profile?.phone?.trim() || "—";
-
   return (
     <section className="space-y-6">
 
@@ -421,64 +422,24 @@ function AdminProfile({
         </div>
       </section>
 
-      {/* PERSONAL INFORMATION */}
+      {/* PERSONAL DETAILS AND PASSWORD */}
+
+      <ProfileForm
+        key={`${me.profile.uid}-${me.profile.name}-${me.profile.phone}`}
+        profile={me.profile}
+        reload={reload}
+      />
+
+      {/* ROLE */}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
 
-        <h3 className="text-xl font-bold text-[#001b40]">
-          Personal details
-        </h3>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Account role
+        </p>
 
-        <div className="mt-6 grid gap-5 md:grid-cols-2">
-
-          {/* NAME */}
-
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Full name
-            </p>
-
-            <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              {name}
-            </div>
-          </div>
-
-          {/* EMAIL */}
-
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Email
-            </p>
-
-            <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 break-all">
-              {email}
-            </div>
-          </div>
-
-          {/* PHONE */}
-
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Phone
-            </p>
-
-            <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              {phone}
-            </div>
-          </div>
-
-          {/* ROLE */}
-
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Account role
-            </p>
-
-            <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold capitalize">
-              Administrator
-            </div>
-          </div>
-
+        <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold">
+          Administrator
         </div>
       </section>
 
@@ -1002,6 +963,8 @@ function ProfileForm({
   const [phone, setPhone] = useState(profile.phone);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  // The password fields stay hidden until the account owner asks for them.
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   async function save(
     event: FormEvent<HTMLFormElement>,
@@ -1011,12 +974,13 @@ function ProfileForm({
     setMessage("");
 
     try {
-      await portalApi("profile", "PUT", {
-        name,
-        phone,
-      });
+      const result = await portalApi<{ warning?: string | null }>(
+        "profile",
+        "PUT",
+        { name, phone },
+      );
 
-      setMessage("Profile saved.");
+      setMessage(result.warning || "Profile saved.");
       await reload();
     } catch (error) {
       setMessage(errorMessage(error));
@@ -1026,7 +990,7 @@ function ProfileForm({
   }
 
   return (
-    <section className="rounded-2xl border bg-white p-7">
+    <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
       <h2 className="text-xl font-bold">
         Personal details
       </h2>
@@ -1091,7 +1055,224 @@ function ProfileForm({
           </p>
         )}
       </form>
+
+      {/* A separate form: a password change never posts the details above. */}
+
+      <div className="mt-6 border-t border-slate-200 pt-6">
+        {passwordOpen ? (
+          <PasswordForm
+            onClose={() => setPasswordOpen(false)}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setPasswordOpen(true)}
+            className={secondary}
+          >
+            Update password
+          </button>
+        )}
+      </div>
     </section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Password form                                                              */
+/* -------------------------------------------------------------------------- */
+
+const MIN_PASSWORD_LENGTH = 10;
+
+function PasswordForm({
+  onClose,
+}: {
+  onClose: () => void;
+}) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      setMessage(
+        `New password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+      );
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setMessage("The new passwords do not match.");
+      return;
+    }
+
+    if (newPassword === currentPassword) {
+      setMessage("The new password must be different from the current one.");
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      const user = portalAuth().currentUser;
+
+      if (!user?.email) {
+        throw new Error("Please sign in again.");
+      }
+
+      // The current password is proven to Firebase before the change is made.
+      await reauthenticateWithCredential(
+        user,
+        EmailAuthProvider.credential(user.email, currentPassword),
+      );
+
+      await updatePassword(user, newPassword);
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setShow(false);
+      setMessage("Password updated.");
+    } catch (error) {
+      const code = (error as { code?: string }).code;
+
+      switch (code) {
+        case "auth/invalid-credential":
+        case "auth/wrong-password":
+          setMessage("Your current password is incorrect.");
+          break;
+
+        case "auth/weak-password":
+          setMessage(
+            `Password is too weak. Use at least ${MIN_PASSWORD_LENGTH} characters.`,
+          );
+          break;
+
+        case "auth/too-many-requests":
+          setMessage("Too many attempts. Please try again later.");
+          break;
+
+        case "auth/requires-recent-login":
+          setMessage("Please sign in again, then change your password.");
+          break;
+
+        case "auth/network-request-failed":
+          setMessage("Network error. Please check your internet connection.");
+          break;
+
+        default:
+          setMessage(errorMessage(error));
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const field = (
+    label: string,
+    value: string,
+    onChange: (next: string) => void,
+    autoComplete: "current-password" | "new-password",
+  ) => (
+    <label className="block text-sm font-semibold">
+      {label}
+      <div className="relative">
+        <input
+          className={`${input} pr-12`}
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          autoComplete={autoComplete}
+          maxLength={128}
+          required
+          disabled={busy}
+        />
+
+        <button
+          type="button"
+          aria-label={show ? "Hide passwords" : "Show passwords"}
+          onClick={() => setShow((current) => !current)}
+          disabled={busy}
+          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 transition hover:text-[#001b40] disabled:opacity-50"
+        >
+          {show ? (
+            <EyeOff size={20} strokeWidth={2} />
+          ) : (
+            <Eye size={20} strokeWidth={2} />
+          )}
+        </button>
+      </div>
+    </label>
+  );
+
+  return (
+    <div>
+      <h3 className="text-lg font-bold">
+        Change password
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        Enter your current password to set a new one.
+      </p>
+
+      <form
+        onSubmit={save}
+        className="mt-5 space-y-4"
+      >
+        {field(
+          "Current password",
+          currentPassword,
+          setCurrentPassword,
+          "current-password",
+        )}
+
+        {field("New password", newPassword, setNewPassword, "new-password")}
+
+        {field(
+          "Confirm new password",
+          confirmPassword,
+          setConfirmPassword,
+          "new-password",
+        )}
+
+        <p className="text-xs text-slate-500">
+          Use at least {MIN_PASSWORD_LENGTH} characters.
+        </p>
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="submit"
+            disabled={busy}
+            className={button}
+          >
+            {busy ? "Updating…" : "Update password"}
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className={secondary}
+          >
+            Cancel
+          </button>
+        </div>
+
+        {message && (
+          <p
+            role="status"
+            className="text-sm"
+          >
+            {message}
+          </p>
+        )}
+      </form>
+    </div>
   );
 }
 

@@ -8,6 +8,8 @@ import type {
   Subscription,
 } from "@/lib/portal/types";
 
+import { getAdminAuth } from "@/lib/firebase-admin";
+
 import {
   activatePayment,
   authenticate,
@@ -176,7 +178,42 @@ async function handle(request: Request, context: Context) {
         .doc(token.uid)
         .update(values);
 
-      return json({ success: true });
+      // Keep the Firebase Authentication record in step with the profile.
+      // The email is never touched here: it identifies the account.
+      const authUpdate: {
+        displayName: string;
+        phoneNumber?: string | null;
+      } = { displayName: values.name };
+
+      // Authentication stores a phone number only in E.164 form, and only
+      // once per project. Anything else is kept in the profile alone.
+      const compact = values.phone.replace(/[^0-9+]/g, "");
+      if (!values.phone) {
+        authUpdate.phoneNumber = null;
+      } else if (/^\+[1-9][0-9]{7,14}$/.test(compact)) {
+        authUpdate.phoneNumber = compact;
+      }
+
+      let warning: string | null =
+        authUpdate.phoneNumber === undefined
+          ? "Saved. Add the country code (for example +91) to store the number on your sign-in record too."
+          : null;
+
+      try {
+        await getAdminAuth().updateUser(token.uid, authUpdate);
+      } catch (error) {
+        if (authUpdate.phoneNumber === undefined) throw error;
+
+        // A rejected or already-used phone number must never block the save.
+        await getAdminAuth().updateUser(token.uid, {
+          displayName: values.name,
+        });
+
+        warning =
+          "Saved. This phone number could not be stored on your sign-in record, so only your profile was updated.";
+      }
+
+      return json({ success: true, warning });
     }
 
     if (action === "order" && request.method === "POST") {
