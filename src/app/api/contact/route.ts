@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { contactSchema } from "@/lib/validation";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+import {
+  callerAddress,
+  takeFormSlot,
+} from "@/lib/portal/form-rate-limit";
+import { recordThreat } from "@/lib/security/events";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -35,6 +40,28 @@ export async function POST(request: Request) {
           details,
         },
         { status: 400 }
+      );
+    }
+
+    // Validated input, but still an anonymous write. Bound it per
+    // address before it reaches Firestore.
+    const limit = await takeFormSlot("contact", callerAddress(request));
+
+    if (!limit.allowed) {
+      void recordThreat("form-abuse", request, "/api/contact");
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Too many messages sent from this network. Please try again shortly.",
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)),
+          },
+        },
       );
     }
 

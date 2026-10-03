@@ -123,6 +123,18 @@ function ServiceCard({ check }: { check: HealthCheckResult }) {
             </div>
             <div className="dv-mono mt-0.5 text-xs text-[var(--dv-muted)]">
               {check.statusCode}
+              {/*
+                A healthy check with a 4xx code is not a failure: these
+                probes expect a refusal. 401 proves a guard holds, 405
+                proves a mutating route rejects the wrong method. Saying
+                so inline stops a green card with a red-looking number
+                from reading as a fault.
+              */}
+              {check.status === "healthy" && check.statusCode >= 400 ? (
+                <span className="ml-1.5 text-[var(--dv-ok)]">
+                  · expected
+                </span>
+              ) : null}
             </div>
           </div>
         ) : null}

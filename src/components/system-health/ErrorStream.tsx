@@ -134,7 +134,12 @@ export default function ErrorStream({
                   {check.statusCode ? (
                     <span className="dv-mono text-[var(--dv-dim)]">
                       {" "}
-                      [{check.statusCode}]
+                      [{check.statusCode}
+                      {/* A refusal this probe asked for, not an error. */}
+                      {check.status === "healthy" && check.statusCode >= 400
+                        ? " expected"
+                        : ""}
+                      ]
                     </span>
                   ) : null}
                   {typeof check.responseTime === "number" ? (

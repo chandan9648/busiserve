@@ -10,8 +10,68 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // The quote API writes to quote_requests; the collection above is
+    // the older name. Both are denied so a rename cannot open a gap.
+    match /quote_requests/{document=**} {
+      allow read, write: if false;
+    }
+
     // Login rate limit buckets are written only by the Admin SDK.
     match /loginRateLimits/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Public form submission ceilings. Admin SDK only.
+    match /formRateLimits/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Site visit counters and the daily visitor markers behind them.
+    // A browser must not be able to read the site's traffic figures,
+    // and must certainly not be able to increment them.
+    match /siteVisits/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /siteVisitors/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Intrusion log. Readable only through the admin-guarded API: an
+    // attack log tells an attacker which of their probes were seen,
+    // so the party generating it must never be able to read it.
+    match /securityEvents/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Portal data. Served only through authenticated API routes that
+    // verify a Firebase ID token server-side; no direct browser access.
+    match /portalUsers/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /portalSubscriptions/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /portalOrders/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /orders/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Administrator directory consulted by resolveAdminAccess.
+    match /admins/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Anything not named above is denied by default. These rules are
+    // explicit so the intent is recorded rather than inferred, and so
+    // a future rule added for one collection cannot silently widen
+    // access to another.
+    match /{document=**} {
       allow read, write: if false;
     }
   }

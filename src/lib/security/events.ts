@@ -42,6 +42,7 @@ export type ThreatType =
   | "forged-webhook"
   | "forged-payment"
   | "path-probe"
+  | "form-abuse"
   | "invalid-token";
 
 export type ThreatSeverity = "critical" | "high" | "medium";
@@ -52,6 +53,7 @@ const SEVERITY: Record<ThreatType, ThreatSeverity> = {
   "forged-payment": "critical",
   "unauthorized-admin": "critical",
   "brute-force": "high",
+  "form-abuse": "high",
   "path-probe": "medium",
   "invalid-token": "medium",
 };
@@ -61,6 +63,7 @@ const LABEL: Record<ThreatType, string> = {
   "unauthorized-admin": "Unauthorised admin access attempt",
   "forged-webhook": "Forged payment webhook",
   "forged-payment": "Forged payment signature",
+  "form-abuse": "Public form flooding",
   "path-probe": "Exploit path scanning",
   "invalid-token": "Invalid session token",
 };
@@ -86,6 +89,11 @@ const GUIDANCE: Record<ThreatType, { why: string; action: string }> = {
     why: "A payment verification request carried a signature that does not match the order. This is an attempt to activate a subscription without paying.",
     action:
       "The verification was refused. Check the orders collection for any subscription activated without a captured Razorpay payment.",
+  },
+  "form-abuse": {
+    why: "One network exceeded the submission ceiling on a public form. No person fills in a contact form five times in ten minutes, so this is a script writing to Firestore — spam in the inbox and billable writes on the project.",
+    action:
+      "Further submissions from that network are already refused for the rest of the window. If it persists, block the source at your CDN and consider adding a challenge to the form.",
   },
   "path-probe": {
     why: "A request targeted a path associated with a known exploit, such as an exposed .env file, a git directory or a WordPress admin panel. This is automated scanning rather than a human visitor.",
