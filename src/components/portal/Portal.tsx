@@ -44,6 +44,7 @@ import {
 } from "@/lib/portal/types";
 
 import Countdown from "./Countdown";
+import SessionTimer from "./SessionTimer";
 import AdminCharts from "./AdminCharts";
 
 /* -------------------------------------------------------------------------- */
@@ -302,6 +303,12 @@ export default function Portal({
           : "bg-slate-50 text-[#001b40]"
       }`}
     >
+      {/* Absolute session lifetime. The scope comes from the server's
+          own role decision, never from which page is being viewed, so
+          an administrator gets the 30 minute limit everywhere —
+          including on their customer dashboard. */}
+      <SessionTimer scope={me.role === "admin" ? "admin" : "user"} />
+
       <div className="container-site space-y-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>

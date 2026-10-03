@@ -12,6 +12,11 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 
+import {
+  evaluateSession,
+  type SessionScope,
+} from "./session-policy";
+
 import type { PlanId } from "./plans";
 
 import type {
@@ -69,6 +74,38 @@ export function isAdmin(uid: string) {
   return adminUids.includes(uid);
 }
 
+/**
+ * Administrator status from environment variables alone.
+ *
+ * No I/O, so it is safe to call on every authenticated request and it
+ * still answers when Firestore is unreachable. It covers the UID
+ * allow-list, the legacy singular name and the primary administrator
+ * email; the `admins` collection is resolved separately, where a
+ * Firestore read is already being made.
+ *
+ * An email grants administrator status only when the token says the
+ * address is verified: an unverified address proves nothing about who
+ * controls it.
+ */
+export function isConfiguredAdminByEnv(token: {
+  uid: string;
+  email?: string;
+  email_verified?: boolean;
+}): boolean {
+  if (isAdmin(token.uid)) return true;
+
+  const legacy = (process.env.PORTAL_ADMIN_UID ?? "").trim();
+  if (legacy && legacy === token.uid) return true;
+
+  const primaryEmail = (process.env.YOUR_PRIMARY_ADMIN_EMAIL ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!primaryEmail || !token.email_verified) return false;
+
+  return primaryEmail === String(token.email ?? "").trim().toLowerCase();
+}
+
 export async function authenticate(request: Request): Promise<DecodedIdToken> {
   const authorization = request.headers.get("authorization");
   const match = authorization?.match(/^Bearer\s+(\S+)$/i);
@@ -80,8 +117,49 @@ export async function authenticate(request: Request): Promise<DecodedIdToken> {
   // Configuration failures must remain server errors, not "session expired".
   const auth = getAdminAuth();
   try {
-    return await auth.verifyIdToken(match[1], true);
+    const token = await auth.verifyIdToken(match[1], true);
+
+    /**
+     * Absolute session lifetime: 30 minutes for an administrator, 6
+     * hours for a customer, measured from `auth_time`.
+     *
+     * Enforced here rather than only in the browser, because a timer
+     * in the browser is a courtesy — it can be paused, the tab can be
+     * cloned, and the ID token keeps refreshing regardless. This is
+     * the check that actually ends the session.
+     *
+     * Administrator status is read from the environment allow-list
+     * only, which costs no I/O. An account that is an administrator
+     * solely through the `admins` collection is additionally held to
+     * the 30 minute limit by resolveAdminAccess at the admin
+     * endpoints themselves, where that lookup already happens.
+     */
+    const scope: SessionScope = isConfiguredAdminByEnv(token)
+      ? "admin"
+      : "user";
+
+    const session = evaluateSession(
+      typeof token.auth_time === "number"
+        ? token.auth_time * 1000
+        : undefined,
+      scope,
+    );
+
+    if (session.expired) {
+      throw new PortalError(
+        scope === "admin"
+          ? "Administrator sessions end after 30 minutes. Please sign in again."
+          : "Your session has ended after 6 hours. Please sign in again.",
+        401,
+      );
+    }
+
+    return token;
   } catch (error) {
+    // A policy rejection is already the right answer; do not let the
+    // Firebase error mapping below rewrite it.
+    if (error instanceof PortalError) throw error;
+
     const code = safeErrorCode(error);
     if (code === "auth/user-disabled") {
       throw new PortalError("This account is disabled. Please contact support.", 403);

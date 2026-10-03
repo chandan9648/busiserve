@@ -3,7 +3,8 @@ import "server-only";
 import type { DecodedIdToken } from "firebase-admin/auth";
 
 import { getAdminDb } from "@/lib/firebase-admin";
-import { isAdmin } from "./server";
+import { isAdmin, isConfiguredAdminByEnv } from "./server";
+import { evaluateSession } from "./session-policy";
 
 /**
  * =============================================================
@@ -42,7 +43,11 @@ export interface AdminAccess {
   /** Which rule granted access, for logging. Absent when refused. */
   via?: AdminGrant;
   /** Short, non-identifying reason for a refusal. */
-  reason?: "not-an-admin" | "record-disabled" | "directory-unavailable";
+  reason?:
+    | "not-an-admin"
+    | "record-disabled"
+    | "directory-unavailable"
+    | "session-expired";
   /**
    * True when the Firestore lookup could not run. Access may still
    * have been granted by the environment fast path.
@@ -57,21 +62,19 @@ interface AdminRecord {
 
 /**
  * Environment-only check. No I/O, so it cannot fail.
+ *
+ * Delegates to the canonical implementation in `./server`, which
+ * `authenticate()` also uses to pick the session lifetime. Keeping one
+ * definition means a session can never be judged "customer" for its
+ * timeout while being judged "administrator" for its permissions.
  */
 export function isConfiguredAdmin(uid: string, verifiedEmail: string): boolean {
-  if (isAdmin(uid)) return true;
-
-  // Legacy singular name, still read by the existing admin routes.
-  const legacy = (process.env.PORTAL_ADMIN_UID || "").trim();
-  if (legacy && legacy === uid) return true;
-
-  const primaryEmail = (process.env.YOUR_PRIMARY_ADMIN_EMAIL || "")
-    .trim()
-    .toLowerCase();
-
-  return Boolean(
-    verifiedEmail && primaryEmail && primaryEmail === verifiedEmail,
-  );
+  return isConfiguredAdminByEnv({
+    uid,
+    email: verifiedEmail,
+    // The caller has already applied the verified-email rule.
+    email_verified: Boolean(verifiedEmail),
+  });
 }
 
 /**
@@ -163,7 +166,28 @@ export async function resolveAdminAccess(
     ({ data }) => String(data.role || "admin").toLowerCase() === "admin",
   );
 
-  return granted
-    ? { allowed: true, via: "admins-collection", directoryDegraded: false }
-    : { allowed: false, reason: "not-an-admin", directoryDegraded: false };
+  if (!granted) {
+    return { allowed: false, reason: "not-an-admin", directoryDegraded: false };
+  }
+
+  /**
+   * This account is an administrator only through the Firestore
+   * directory, so `authenticate()` judged its session against the
+   * 6 hour customer limit. Apply the 30 minute administrator limit
+   * now that the account's real status is known.
+   */
+  const session = evaluateSession(
+    typeof token.auth_time === "number" ? token.auth_time * 1000 : undefined,
+    "admin",
+  );
+
+  if (session.expired) {
+    return {
+      allowed: false,
+      reason: "session-expired",
+      directoryDegraded: false,
+    };
+  }
+
+  return { allowed: true, via: "admins-collection", directoryDegraded: false };
 }

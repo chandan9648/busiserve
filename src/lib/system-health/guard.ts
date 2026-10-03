@@ -77,10 +77,16 @@ export async function requireSystemHealthAdmin(
    * for the diagnostics console. That is either a signed-in customer
    * probing, or a stolen session being tested — both worth an alarm.
    *
-   * A directory outage is not logged as an intrusion: it means the
-   * check could not run, not that someone attacked.
+   * Two refusals are not intrusions and must not raise an alarm:
+   * a directory outage means the check could not run, and an expired
+   * session means a legitimate administrator simply stayed signed in
+   * too long. Logging either would train the operator to ignore the
+   * feed that matters.
    */
-  if (access.reason !== "directory-unavailable") {
+  if (
+    access.reason !== "directory-unavailable" &&
+    access.reason !== "session-expired"
+  ) {
     void recordThreat("unauthorized-admin", request);
   }
 
@@ -94,6 +100,14 @@ export async function requireSystemHealthAdmin(
       "Administrator access could not be confirmed: the admin directory is unreachable. If you are listed in PORTAL_ADMIN_UIDS this check does not depend on Firestore, so verify that your UID is listed there.",
       403,
       "directory-unavailable",
+    );
+  }
+
+  if (access.reason === "session-expired") {
+    throw new SystemHealthAccessError(
+      "Administrator sessions end after 30 minutes. Please sign in again.",
+      403,
+      "session-expired",
     );
   }
 
