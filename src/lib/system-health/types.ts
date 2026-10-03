@@ -132,6 +132,16 @@ export interface ApiRouteAudit {
   bodySizeLimited: boolean;
   /** True when the handler can leak a raw error to the response. */
   leaksErrorDetail: boolean;
+  /**
+   * True when the handler declares itself deliberately anonymous with
+   * a `@security:public` marker. Some endpoints must accept an
+   * unauthenticated caller to do their job at all.
+   */
+  intentionallyPublic: boolean;
+  /** The justification written beside that marker. */
+  publicReason?: string;
+  /** True when the handler reads a request body it could validate. */
+  readsBody: boolean;
   notes: string[];
 }
 

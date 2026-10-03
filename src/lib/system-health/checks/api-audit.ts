@@ -49,7 +49,23 @@ const ADMIN_PATTERNS = [
   /\bisAdmin\s*\(/,
   /\bconfiguredAdmin\s*\(/,
   /\brequireSystemHealthAdmin\s*\(/,
+  /\bresolveAdminAccess\s*\(/,
 ];
+
+/**
+ * Routes that must accept an anonymous caller declare it in their own
+ * source with a marker comment:
+ *
+ *   @security:public <why this endpoint cannot require a credential>
+ *
+ * The justification lives next to the handler rather than in a list
+ * inside this audit. A list here would drift the moment someone adds
+ * a route and forgets to update it, and — worse — it would let a
+ * genuinely unguarded endpoint be silenced from a file its author
+ * never opens. With the marker, making an endpoint public is a
+ * visible edit to that endpoint, reviewable in the same diff.
+ */
+const PUBLIC_MARKER = /@security:public\s+([^\n*]+)/;
 
 const VALIDATION_PATTERNS = [
   /\bz\s*\.\s*object\s*\(/,
@@ -58,10 +74,33 @@ const VALIDATION_PATTERNS = [
   /Schema\s*\.\s*(?:safeParse|parse)\s*\(/,
 ];
 
+/**
+ * Helpers that put a ceiling on how often a handler will act.
+ *
+ * Not all of these are rate limiters in the classic sense:
+ * `recordVisit` bounds writes by counting a visitor at most once per
+ * day, which is a stricter ceiling than a rate limit, and
+ * `lastOrderAt` is the per-user checkout throttle. What they share is
+ * that an attacker cannot increase write volume by calling more often.
+ */
 const RATE_LIMIT_PATTERNS = [
   /\btakeLoginToken\s*\(/,
+  /\btakeFormSlot\s*\(/,
+  /\brecordVisit\s*\(/,
   /\brateLimit/i,
   /lastOrderAt/,
+];
+
+/**
+ * A handler can only validate a body it actually reads. A route that
+ * takes no input has nothing to schema-check, so flagging it for a
+ * missing schema would be noise.
+ */
+const BODY_READ_PATTERNS = [
+  /request\s*\.\s*json\s*\(/,
+  /request\s*\.\s*text\s*\(/,
+  /request\s*\.\s*formData\s*\(/,
+  /\bawait\s+body\s*\(\s*request\s*\)/,
 ];
 
 const SIGNATURE_PATTERNS = [
@@ -152,33 +191,56 @@ export function runApiAudit(tree: SourceTree): ApiAuditDiagnostics {
 
     /* A mutating route with no token verification and no HMAC. */
     if (mutating && !route.authenticated && !route.signatureVerified) {
-      const isPublicForm = /\/api\/(?:contact|quote)\b/.test(route.route);
-
-      findings.push({
-        id: `apiAudit.auth.${route.route}`,
-        title: isPublicForm
-          ? `Public write endpoint: ${route.route}`
-          : `Mutating route without authentication`,
-        area: "api",
-        severity: isPublicForm ? "medium" : "critical",
-        status: isPublicForm ? "warn" : "fail",
-        summary: isPublicForm
-          ? `${route.route} accepts writes from anonymous visitors, which a public form requires.`
-          : `${route.route} accepts ${route.methods.join(
-              "/",
-            )} with no token verification and no signature check.`,
-        why: isPublicForm
-          ? "A public form has to accept anonymous input, so this is expected rather than a defect. It matters because the endpoint writes to Firestore on every request: without a rate limit or a challenge, it can be driven in a loop to inflate document counts and the project's write costs."
-          : "An unauthenticated mutating endpoint lets any visitor change stored state.",
-        remediation: isPublicForm
-          ? `Keep the endpoint public, and add a per-address throttle. The token bucket in src/lib/portal/login-rate-limit.ts already implements this pattern against Firestore and can be reused for ${route.route}.`
-          : `Call authenticate(request) at the top of the handler in ${route.file} before any data access.`,
-        reference: route.file,
-      });
+      if (route.intentionallyPublic) {
+        /**
+         * The handler declares why it cannot require a credential.
+         * What still matters for a public write endpoint is whether
+         * anything bounds how often it can be called.
+         */
+        findings.push(
+          route.rateLimited
+            ? {
+                id: `apiAudit.public.${route.route}`,
+                title: `Public endpoint with a write ceiling: ${route.route}`,
+                area: "api",
+                severity: "info",
+                status: "pass",
+                summary: `${route.route} accepts anonymous requests by design, and bounds how many it will act on.`,
+                why: `Declared public because: ${route.publicReason}. An anonymous write endpoint is only safe while something limits its rate, and this one has that limit.`,
+                remediation: "",
+                reference: route.file,
+              }
+            : {
+                id: `apiAudit.public.${route.route}`,
+                title: `Public write endpoint with no rate limit: ${route.route}`,
+                area: "api",
+                severity: "medium",
+                status: "warn",
+                summary: `${route.route} accepts anonymous writes by design, but nothing bounds how often.`,
+                why: `Declared public because: ${route.publicReason}. That justifies the missing credential, not the missing ceiling: the endpoint writes to Firestore on every request, so it can be driven in a loop to inflate document counts and billable writes.`,
+                remediation: `Add a per-address throttle. src/lib/portal/form-rate-limit.ts implements exactly this against Firestore and can be reused for ${route.route}.`,
+                reference: route.file,
+              },
+        );
+      } else {
+        findings.push({
+          id: `apiAudit.auth.${route.route}`,
+          title: "Mutating route without authentication",
+          area: "api",
+          severity: "critical",
+          status: "fail",
+          summary: `${route.route} accepts ${route.methods.join(
+            "/",
+          )} with no token verification and no signature check.`,
+          why: "An unauthenticated mutating endpoint lets any visitor change stored state.",
+          remediation: `Call authenticate(request) at the top of the handler in ${route.file} before any data access. If the endpoint must stay anonymous, say so in the handler with a "@security:public <reason>" comment so this audit can assess it on the right terms.`,
+          reference: route.file,
+        });
+      }
     }
 
-    /* A mutating route with no input validation. */
-    if (mutating && !route.validated) {
+    /* A mutating route that reads a body but does not validate it. */
+    if (mutating && route.readsBody && !route.validated) {
       findings.push({
         id: `apiAudit.validation.${route.route}`,
         title: `Request body not schema validated`,
@@ -223,7 +285,7 @@ export function runApiAudit(tree: SourceTree): ApiAuditDiagnostics {
     }
 
     /* A body read with no size bound. */
-    if (mutating && !route.bodySizeLimited) {
+    if (mutating && route.readsBody && !route.bodySizeLimited) {
       findings.push({
         id: `apiAudit.bodySize.${route.route}`,
         title: `Request body read without a size bound`,
@@ -297,9 +359,21 @@ function auditRoute(path: string, source: string): ApiRouteAudit {
   const authenticated = has(AUTH_PATTERNS);
   const adminGuarded = has(ADMIN_PATTERNS);
   const signatureVerified = has(SIGNATURE_PATTERNS);
+  const readsBody = has(BODY_READ_PATTERNS);
+
+  const publicDeclaration = PUBLIC_MARKER.exec(source);
+  const publicReason = publicDeclaration?.[1]?.trim();
 
   if (!authenticated && signatureVerified) {
     notes.push("Authenticated by HMAC signature rather than by a user token.");
+  }
+
+  if (publicReason) {
+    notes.push(`Declared public: ${publicReason}`);
+  }
+
+  if (!readsBody) {
+    notes.push("Reads no request body.");
   }
 
   if (methods.length === 0) {
@@ -327,6 +401,9 @@ function auditRoute(path: string, source: string): ApiRouteAudit {
     signatureVerified,
     bodySizeLimited: has(BODY_LIMIT_PATTERNS),
     leaksErrorDetail: has(ERROR_LEAK_PATTERNS),
+    intentionallyPublic: Boolean(publicReason),
+    publicReason,
+    readsBody,
     notes,
   };
 }

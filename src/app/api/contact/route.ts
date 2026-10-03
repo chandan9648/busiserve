@@ -1,3 +1,10 @@
+/**
+ * POST /api/contact
+ *
+ * @security:public A contact form must accept a message from someone who
+ * has no account; that is the entire purpose of the page. Anonymous write
+ * volume is bounded by takeFormSlot instead.
+ */
 import { NextResponse } from "next/server";
 import { contactSchema } from "@/lib/validation";
 import { getAdminDb } from "@/lib/firebase-admin";

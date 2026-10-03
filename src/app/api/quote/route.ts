@@ -1,3 +1,10 @@
+/**
+ * POST /api/quote
+ *
+ * @security:public A quote request comes from a prospective customer who by
+ * definition has no account yet. Anonymous write volume is bounded by
+ * takeFormSlot instead.
+ */
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 

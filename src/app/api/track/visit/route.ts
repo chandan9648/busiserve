@@ -5,6 +5,10 @@ import { recordVisit } from "@/lib/portal/visits";
 /**
  * POST /api/track/visit
  *
+ * @security:public An anonymous visitor is precisely what this counts, so
+ * requiring a credential would make the endpoint measure nothing. Write
+ * volume is bounded instead, to one counted visit per visitor per day.
+ *
  * Records one site visit. Public by necessity — an anonymous visitor
  * is precisely what it counts.
  *

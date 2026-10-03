@@ -69,6 +69,14 @@ export default function ApiAuditPanel({ audit }: { audit: ApiAuditResult }) {
                     <code className="dv-mono break-all text-[0.75rem] text-[var(--dv-text)]">
                       {route.route}
                     </code>
+                    {route.intentionallyPublic ? (
+                      <span
+                        className="dv-mono mt-1 block text-[0.5625rem] uppercase tracking-[0.08em] text-[var(--dv-info)]"
+                        title={route.publicReason}
+                      >
+                        declared public
+                      </span>
+                    ) : null}
                   </td>
 
                   <td>
@@ -83,16 +91,23 @@ export default function ApiAuditPanel({ audit }: { audit: ApiAuditResult }) {
                     const value = route[column.key];
 
                     /* Expectation differs per column, so the mark does too:
-                       a read-only route needs no body size bound, and a
-                       non-admin route needs no admin check. */
+                       a read-only route needs no body size bound, a
+                       non-admin route needs no admin check, and a route
+                       that declares itself public is not expected to
+                       authenticate — but it IS expected to rate limit. */
                     const expected =
                       column.key === "adminGuarded"
                         ? /\/admin(?:\/|$)/.test(route.route)
                         : column.key === "signatureVerified"
                           ? /webhook/.test(route.route)
                           : column.key === "rateLimited"
-                            ? false
-                            : mutating;
+                            ? route.intentionallyPublic && mutating
+                            : column.key === "authenticated"
+                              ? mutating && !route.intentionallyPublic
+                              : column.key === "validated" ||
+                                  column.key === "bodySizeLimited"
+                                ? mutating && route.readsBody
+                                : mutating;
 
                     return (
                       <td key={column.key}>

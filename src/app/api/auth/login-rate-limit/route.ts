@@ -15,6 +15,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
+ * @security:public This endpoint runs before a password is ever checked, so
+ * it cannot require a session — demanding one would mean signing in to ask
+ * whether you are allowed to try signing in. Its own token bucket is the
+ * ceiling on how often it will act.
+ *
  * Guards /login for users and administrators alike:
  *
  *   "attempt" takes one token before the password is checked
