@@ -22,6 +22,8 @@ import SecurityPosture from "./SecurityPosture";
 import ServiceHealthGrid from "./ServiceHealthGrid";
 import SystemStatusHero from "./SystemStatusHero";
 import TerminalLogs from "./TerminalLogs";
+import ThreatMonitor from "./ThreatMonitor";
+import { useThreatFeed } from "./useThreatFeed";
 import { Panel, SectionHeading, Skeleton } from "./primitives";
 import { coreNodesFrom } from "./core-nodes";
 import { useSystemHealth } from "./useSystemHealth";
@@ -85,6 +87,43 @@ export default function SystemHealthDashboard() {
     changeMode,
     setInterval: setRefreshInterval,
   } = useSystemHealth("quick");
+
+  /**
+   * Live intrusion feed, polled independently of the diagnostic scan
+   * so an alarm fires within seconds rather than waiting for the next
+   * full scan. Disabled while access is refused, so a non-admin never
+   * polls it.
+   */
+  const threats = useThreatFeed(!denied);
+
+  /**
+   * Flash the tab title while an attack is unacknowledged.
+   *
+   * An operator watching a dashboard usually has it in a background
+   * tab, where a banner and a siren they have muted reach nobody. The
+   * title is the one channel visible from another tab.
+   */
+  useEffect(() => {
+    if (threats.alerting.length === 0) return;
+
+    const original = document.title;
+    let showing = false;
+
+    const timer = window.setInterval(() => {
+      showing = !showing;
+
+      document.title = showing
+        ? `🚨 ${threats.alerting.length} THREAT${
+            threats.alerting.length === 1 ? "" : "S"
+          } — BusiServe`
+        : original;
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+      document.title = original;
+    };
+  }, [threats.alerting.length]);
 
   /* Toast auto-dismiss. */
   useEffect(() => {
@@ -219,6 +258,32 @@ export default function SystemHealthDashboard() {
         {report ? (
           <CriticalAlerts checks={checks} findings={report.findings} />
         ) : null}
+
+        {/* 3 — Live intrusion monitor */}
+        <section>
+          <SectionHeading label="Threat monitor">
+            <span className="dv-mono text-[0.625rem] text-[var(--dv-dim)]">
+              Live · 10s
+            </span>
+          </SectionHeading>
+
+          <Panel
+            title="Intrusion attempts"
+            subtitle="Signals raised by the application's own guards. Every row is a request that was refused, not a breach."
+          >
+            <ThreatMonitor
+              events={threats.events}
+              alerting={threats.alerting}
+              loaded={threats.loaded}
+              error={threats.error}
+              muted={threats.muted}
+              audioBlocked={threats.audioBlocked}
+              onToggleMute={threats.toggleMute}
+              onEnableAudio={threats.enableAudio}
+              onAcknowledge={threats.acknowledge}
+            />
+          </Panel>
+        </section>
 
         {/* 3 — Core service grid */}
         <section>

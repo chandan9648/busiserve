@@ -9,6 +9,7 @@ import {
   takeLoginToken,
   type LoginLimit,
 } from "@/lib/portal/login-rate-limit";
+import { recordThreat } from "@/lib/security/events";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -89,6 +90,12 @@ export async function POST(request: Request) {
     const limit = await takeLoginToken(key);
 
     if (!limit.allowed) {
+      // The bucket is empty, which means sustained failed sign-in
+      // attempts for this account and address: a password-guessing
+      // run. Logged for the security console; the refusal below is
+      // unchanged and does not wait on the write.
+      void recordThreat("brute-force", request, "/login");
+
       return json(payload(limit), 429, limit.retryAfterMs);
     }
 

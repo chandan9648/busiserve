@@ -4,6 +4,7 @@ import type { DecodedIdToken } from "firebase-admin/auth";
 
 import { resolveAdminAccess } from "@/lib/portal/admin-access";
 import { authenticate, PortalError } from "@/lib/portal/server";
+import { recordThreat } from "@/lib/security/events";
 
 /**
  * =============================================================
@@ -70,6 +71,18 @@ export async function requireSystemHealthAdmin(
   const access = await resolveAdminAccess(token);
 
   if (access.allowed) return token;
+
+  /**
+   * An authenticated caller who is not an administrator just reached
+   * for the diagnostics console. That is either a signed-in customer
+   * probing, or a stolen session being tested — both worth an alarm.
+   *
+   * A directory outage is not logged as an intrusion: it means the
+   * check could not run, not that someone attacked.
+   */
+  if (access.reason !== "directory-unavailable") {
+    void recordThreat("unauthorized-admin", request);
+  }
 
   /**
    * The caller has already proven their identity, so naming the

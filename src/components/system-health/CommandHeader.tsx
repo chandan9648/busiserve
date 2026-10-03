@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import {
   Activity,
   Download,
+  LayoutDashboard,
   RotateCw,
   ShieldAlert,
   Square,
@@ -158,6 +160,14 @@ export default function CommandHeader({
 
           {/* Controls ------------------------------------------------- */}
           <div className="dv-no-print flex flex-wrap items-center gap-2">
+            {/* Way back to the normal admin surface. The console takes
+                over the whole viewport and hides the site header, so
+                without this the only exit is the browser's back button. */}
+            <Link href="/admin" className="dv-btn">
+              <LayoutDashboard className="h-3.5 w-3.5" aria-hidden="true" />
+              Admin dashboard
+            </Link>
+
             {scanning ? (
               <button
                 type="button"

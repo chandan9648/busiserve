@@ -33,6 +33,8 @@ import {
   type PlanId,
 } from "@/lib/portal/plans";
 
+import type { VisitStats } from "@/lib/portal/visits";
+
 import {
   subscriptionStatus,
   type AdminResponse,
@@ -1315,6 +1317,11 @@ function AdminDashboard({
   const requestVersion = useRef(0);
   const deleting = useRef(false);
 
+  // Site visit counters. Kept in their own state and their own poll so
+  // the existing admin request is untouched: if the counter fails, the
+  // user table and revenue figures above are unaffected.
+  const [visits, setVisits] = useState<VisitStats | null>(null);
+
   const fetchData = useCallback(async () => {
     const version = ++requestVersion.current;
     const result = await portalApi<AdminResponse>(`admin?page=${page}&_t=${Date.now()}`);
@@ -1361,6 +1368,39 @@ function AdminDashboard({
       window.clearInterval(interval);
     };
   }, [page]);
+
+  /**
+   * Visit counters, polled on the same 5 second cadence as the figures
+   * above so the card stays live.
+   *
+   * A failure is swallowed deliberately: the last good reading stays on
+   * screen and no error banner appears, because a visitor counter being
+   * briefly unavailable is not something an administrator needs to act
+   * on, and it must never look like the user data failed to load.
+   */
+  useEffect(() => {
+    let active = true;
+
+    const syncVisits = async () => {
+      try {
+        const result = await portalApi<VisitStats>(
+          `admin/visits?_t=${Date.now()}`,
+        );
+
+        if (active) setVisits(result);
+      } catch {
+        // Keep the previous reading rather than showing a zero.
+      }
+    };
+
+    void syncVisits();
+    const interval = window.setInterval(() => void syncVisits(), 5000);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, []);
 
   // Never expose an administrator as a customer.
   // We check both UID and the primary admin email so the admin stays hidden
@@ -1488,7 +1528,7 @@ function AdminDashboard({
         )}
       </div>
 
-      <AdminCharts data={data} />
+      <AdminCharts data={data} visits={visits} />
 
       <section className="rounded-2xl border border-white/10 bg-[#0d1a2e] p-6 shadow-xl">
         <div className="flex flex-wrap items-center justify-between gap-4">

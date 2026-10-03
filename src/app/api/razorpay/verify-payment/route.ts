@@ -4,6 +4,7 @@ import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
 import { generateInvoiceNumber } from "@/lib/order";
 import { generateInvoicePdf } from "@/lib/invoice";
 import { sendInvoiceEmail } from "@/lib/email";
+import { recordThreat } from "@/lib/security/events";
 
 export async function POST(request: Request) {
   try {
@@ -80,6 +81,11 @@ export async function POST(request: Request) {
         Buffer.from(signature, "hex")
       )
     ) {
+      // A verification request whose HMAC does not match the order is
+      // an attempt to activate a subscription without paying. Logged
+      // for the security console; the rejection below is unchanged.
+      void recordThreat("forged-payment", request);
+
       return NextResponse.json(
         { error: "Invalid payment signature." },
         { status: 400 }

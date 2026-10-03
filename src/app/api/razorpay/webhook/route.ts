@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { recordThreat } from "@/lib/security/events";
 
 // Note: This webhook requires database setup to process payments
 // Currently stubbed to accept and log events
@@ -39,6 +40,11 @@ export async function POST(request: Request) {
         Buffer.from(signature)
       )
     ) {
+      // A webhook whose HMAC does not match the shared secret is an
+      // attempt to mark an unpaid order as paid. Logged for the
+      // security console; the rejection below is unchanged.
+      void recordThreat("forged-webhook", request);
+
       return NextResponse.json(
         {
           error: "Invalid webhook signature.",

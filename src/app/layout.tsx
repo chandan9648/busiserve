@@ -10,6 +10,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import ToastProvider from "@/components/providers/ToastProvider";
 import SmoothScroll from "@/components/SmoothScroll";
+import VisitTracker from "@/components/VisitTracker";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -49,6 +50,7 @@ export default function RootLayout({
       >
         <SmoothScroll />
         <ToastProvider />
+        <VisitTracker />
 
         <Header />
 

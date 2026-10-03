@@ -31,8 +31,20 @@ type AdminChartData = {
   planDistribution?: PlanDistributionItem[];
 };
 
+type VisitSummary = {
+  total: number;
+  today: number;
+  yesterday: number;
+};
+
 type AdminChartsProps = {
   data?: AdminChartData | null;
+  /**
+   * Unique site visitors, polled separately by the dashboard.
+   * Null until the first reading arrives, which the card shows as a
+   * dash rather than as zero visitors.
+   */
+  visits?: VisitSummary | null;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -215,6 +227,25 @@ function IconRevenue() {
   );
 }
 
+function IconVisitors() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      className="h-6 w-6"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.25 12s3.5-6.75 9.75-6.75S21.75 12 21.75 12s-3.5 6.75-9.75 6.75S2.25 12 2.25 12Z"
+      />
+      <circle cx="12" cy="12" r="2.75" />
+    </svg>
+  );
+}
+
 /* -------------------------------------------------------------------------- */
 /* Stat card                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -244,6 +275,12 @@ const STAT_CONFIG = [
     iconBg: "bg-white/20",
     Icon: IconRevenue,
   },
+  {
+    key: "visitors",
+    gradient: "from-sky-500 to-cyan-600",
+    iconBg: "bg-white/20",
+    Icon: IconVisitors,
+  },
 ];
 
 function StatCard({
@@ -252,12 +289,19 @@ function StatCard({
   description,
   configKey,
   isRevenue = false,
+  pending = false,
 }: {
   label: string;
   rawValue: number;
   description?: string;
   configKey: string;
   isRevenue?: boolean;
+  /**
+   * True while the figure has not been read yet. The card shows a dash
+   * instead of counting up to zero, so "not loaded" is never displayed
+   * as a real measurement of nothing.
+   */
+  pending?: boolean;
 }) {
   const cfg =
     STAT_CONFIG.find((item) => item.key === configKey) ??
@@ -289,9 +333,11 @@ function StatCard({
       </p>
 
       <p className="mt-1 text-4xl font-extrabold tracking-tight">
-        {isRevenue
-          ? formatCurrency(counted)
-          : counted.toLocaleString("en-IN")}
+        {pending
+          ? "—"
+          : isRevenue
+            ? formatCurrency(counted)
+            : counted.toLocaleString("en-IN")}
       </p>
 
       {description && (
@@ -1003,6 +1049,7 @@ function DonutChart({
 
 export default function AdminCharts({
   data,
+  visits = null,
 }: AdminChartsProps) {
   if (!data) {
     return (
@@ -1057,7 +1104,7 @@ export default function AdminCharts({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard
           configKey="users"
           label="Registered users"
@@ -1085,6 +1132,18 @@ export default function AdminCharts({
           rawValue={totalRevenue}
           isRevenue
           description="All-time Razorpay payments"
+        />
+
+        <StatCard
+          configKey="visitors"
+          label="Website visitors"
+          rawValue={visits ? visits.total : 0}
+          pending={visits === null}
+          description={
+            visits
+              ? `${visits.today.toLocaleString("en-IN")} today · ${visits.yesterday.toLocaleString("en-IN")} yesterday`
+              : "Loading…"
+          }
         />
       </div>
 
