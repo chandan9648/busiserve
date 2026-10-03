@@ -1,0 +1,609 @@
+/* ==========================================================================
+   DEVIL // SYSTEM COMMAND CENTER
+   --------------------------------------------------------------------------
+   Scoped entirely under `.dv-root`, so none of it can reach the public site,
+   which stays on its own light `--surface` palette in globals.css.
+   ========================================================================== */
+
+.dv-root {
+  /* Near-black through charcoal. Four steps, so depth reads without borders
+     having to do all the work. */
+  --dv-bg: #07080a;
+  --dv-panel: #0c0e11;
+  --dv-raised: #11141a;
+  --dv-inset: #090b0e;
+
+  --dv-line: #1c2127;
+  --dv-line-strong: #2a3038;
+
+  --dv-text: #e8ebef;
+  --dv-muted: #949ca6;
+  --dv-dim: #5d656e;
+
+  /* Crimson is the brand accent; it never signals status on its own. */
+  --dv-accent: #e5484d;
+  --dv-accent-dim: #8c1a20;
+  --dv-accent-wash: rgb(229 72 77 / 8%);
+
+  /* Status scale. Each pairs with a text label everywhere it is used. */
+  --dv-ok: #3dd68c;
+  --dv-ok-wash: rgb(61 214 140 / 10%);
+  --dv-warn: #f5a524;
+  --dv-warn-wash: rgb(245 165 36 / 10%);
+  --dv-crit: #ff5a5f;
+  --dv-crit-wash: rgb(255 90 95 / 10%);
+  --dv-unknown: #6e7681;
+  --dv-unknown-wash: rgb(110 118 129 / 10%);
+  --dv-info: #58a6ff;
+
+  --dv-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono",
+    Menlo, Consolas, monospace;
+
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% -10%, rgb(229 72 77 / 7%), transparent 70%),
+    var(--dv-bg);
+  color: var(--dv-text);
+  font-family: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  /* The site uses light `::selection`; restate it for a dark surface. */
+  -webkit-font-smoothing: antialiased;
+}
+
+.dv-root ::selection {
+  background: var(--dv-accent-dim);
+  color: #fff;
+}
+
+/* The public site header belongs to the marketing layout and would break the
+   command-centre framing. `:has()` removes it for this route only, with no
+   change to the root layout or to Header.tsx. */
+body:has(.dv-root) .bs-header {
+  display: none;
+}
+
+body:has(.dv-root) {
+  background: var(--dv-bg, #07080a);
+}
+
+/* --------------------------------------------------------------------------
+   Typography
+   -------------------------------------------------------------------------- */
+
+.dv-root h1,
+.dv-root h2,
+.dv-root h3 {
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.dv-mono {
+  font-family: var(--dv-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Section eyebrow: the small tracked label above each panel group. */
+.dv-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--dv-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dv-dim);
+}
+
+.dv-eyebrow::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--dv-line), transparent);
+}
+
+/* --------------------------------------------------------------------------
+   Panels
+   -------------------------------------------------------------------------- */
+
+.dv-panel {
+  position: relative;
+  border: 1px solid var(--dv-line);
+  border-radius: 10px;
+  background: var(--dv-panel);
+  min-width: 0;
+}
+
+.dv-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--dv-line);
+}
+
+.dv-panel-title {
+  font-family: var(--dv-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--dv-text);
+}
+
+.dv-panel-body {
+  padding: 16px;
+}
+
+/* A service card lifts very slightly; no glow, no scale. */
+.dv-card {
+  border: 1px solid var(--dv-line);
+  border-radius: 9px;
+  background: var(--dv-raised);
+  padding: 14px;
+  min-width: 0;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+@media (hover: hover) {
+  .dv-card:hover {
+    border-color: var(--dv-line-strong);
+    background: #14171d;
+    transform: translateY(-2px);
+  }
+}
+
+.dv-card:focus-visible,
+.dv-root :where(button, a, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--dv-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   Status
+   -------------------------------------------------------------------------- */
+
+.dv-status {
+  --c: var(--dv-unknown);
+  --w: var(--dv-unknown-wash);
+}
+.dv-status[data-status="healthy"] {
+  --c: var(--dv-ok);
+  --w: var(--dv-ok-wash);
+}
+.dv-status[data-status="warning"] {
+  --c: var(--dv-warn);
+  --w: var(--dv-warn-wash);
+}
+.dv-status[data-status="critical"],
+.dv-status[data-status="offline"] {
+  --c: var(--dv-crit);
+  --w: var(--dv-crit-wash);
+}
+
+.dv-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--c, var(--dv-unknown));
+}
+
+/* The pulse carries no information on its own — the text label beside it
+   always states the status — so disabling it loses nothing. */
+.dv-dot[data-live="true"] {
+  animation: dv-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes dv-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--w);
+  }
+  50% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+
+.dv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+  border-radius: 5px;
+  background: var(--w);
+  color: var(--c);
+  font-family: var(--dv-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Severity chips
+   -------------------------------------------------------------------------- */
+
+.dv-sev {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: var(--dv-mono);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+.dv-sev[data-sev="critical"] {
+  background: rgb(255 90 95 / 14%);
+  color: #ff8085;
+  border-color: rgb(255 90 95 / 30%);
+}
+.dv-sev[data-sev="high"] {
+  background: rgb(255 138 76 / 12%);
+  color: #ff9f6b;
+  border-color: rgb(255 138 76 / 26%);
+}
+.dv-sev[data-sev="medium"] {
+  background: rgb(245 165 36 / 12%);
+  color: #f7b955;
+  border-color: rgb(245 165 36 / 26%);
+}
+.dv-sev[data-sev="low"] {
+  background: rgb(88 166 255 / 12%);
+  color: #79b8ff;
+  border-color: rgb(88 166 255 / 26%);
+}
+.dv-sev[data-sev="info"] {
+  background: rgb(110 118 129 / 14%);
+  color: var(--dv-muted);
+  border-color: rgb(110 118 129 / 26%);
+}
+
+/* --------------------------------------------------------------------------
+   Controls
+   -------------------------------------------------------------------------- */
+
+.dv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--dv-line-strong);
+  border-radius: 7px;
+  background: var(--dv-raised);
+  color: var(--dv-text);
+  font-family: var(--dv-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.dv-btn:hover:not(:disabled) {
+  border-color: var(--dv-accent-dim);
+  background: #171b21;
+}
+
+.dv-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.dv-btn[data-variant="primary"] {
+  border-color: var(--dv-accent-dim);
+  background: linear-gradient(180deg, #7f1419, #5e0f13);
+  color: #ffe4e5;
+}
+
+.dv-btn[data-variant="primary"]:hover:not(:disabled) {
+  background: linear-gradient(180deg, #96181e, #6d1216);
+}
+
+.dv-btn[aria-pressed="true"] {
+  border-color: var(--dv-ok);
+  color: var(--dv-ok);
+  background: var(--dv-ok-wash);
+}
+
+.dv-select {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--dv-line-strong);
+  border-radius: 7px;
+  background: var(--dv-raised);
+  color: var(--dv-text);
+  font-family: var(--dv-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.dv-input {
+  min-height: 34px;
+  width: 100%;
+  padding: 0 10px;
+  border: 1px solid var(--dv-line);
+  border-radius: 7px;
+  background: var(--dv-inset);
+  color: var(--dv-text);
+  font-family: var(--dv-mono);
+  font-size: 0.75rem;
+}
+
+.dv-input::placeholder {
+  color: var(--dv-dim);
+}
+
+.dv-input:focus {
+  outline: none;
+  border-color: var(--dv-accent-dim);
+}
+
+/* --------------------------------------------------------------------------
+   Terminal and log surfaces
+   -------------------------------------------------------------------------- */
+
+.dv-terminal {
+  background: var(--dv-inset);
+  border-radius: 0 0 9px 9px;
+  font-family: var(--dv-mono);
+  font-size: 0.75rem;
+  line-height: 1.75;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 14px 16px;
+  /* Lenis owns window scrolling; this opts the panel out so its own
+     overflow behaves natively. */
+  overscroll-behavior: contain;
+}
+
+.dv-terminal-line {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 1px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.dv-leader {
+  overflow: hidden;
+  color: var(--dv-line-strong);
+  /* Dot leaders, so a long and a short label line their result up. */
+  white-space: nowrap;
+}
+
+.dv-leader::after {
+  content: " ·································································································";
+}
+
+/* Scrollbars inside the console, so they do not read as light-theme. */
+.dv-root *::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+.dv-root *::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dv-root *::-webkit-scrollbar-thumb {
+  background: #262c33;
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.dv-root *::-webkit-scrollbar-thumb:hover {
+  background: #343c45;
+  background-clip: content-box;
+}
+
+.dv-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #262c33 transparent;
+  overscroll-behavior: contain;
+}
+
+/* --------------------------------------------------------------------------
+   Hero
+   -------------------------------------------------------------------------- */
+
+.dv-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--dv-line);
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse 80% 120% at 0% 0%, rgb(229 72 77 / 6%), transparent 60%),
+    var(--dv-panel);
+}
+
+/* A single sweep across the hero while a scan is running. It is decorative;
+   the live region announces scan state for anyone who cannot see it. */
+.dv-hero[data-scanning="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 40%,
+    rgb(229 72 77 / 7%) 50%,
+    transparent 60%
+  );
+  background-size: 300% 100%;
+  animation: dv-sweep 1.7s linear infinite;
+}
+
+@keyframes dv-sweep {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+
+.dv-score {
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(3.25rem, 10vw, 5.75rem);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.055em;
+  font-variant-numeric: tabular-nums;
+  color: var(--c, var(--dv-text));
+}
+
+/* Thin horizontal meter, used for the score and per-area posture. */
+.dv-meter {
+  height: 4px;
+  border-radius: 99px;
+  background: var(--dv-line);
+  overflow: hidden;
+}
+
+.dv-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--c, var(--dv-accent));
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* --------------------------------------------------------------------------
+   Tables
+   -------------------------------------------------------------------------- */
+
+.dv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.dv-table th {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dv-line);
+  font-family: var(--dv-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dv-dim);
+  white-space: nowrap;
+}
+
+.dv-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--dv-line) 55%, transparent);
+  color: var(--dv-muted);
+  vertical-align: top;
+}
+
+.dv-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+@media (hover: hover) {
+  .dv-table tbody tr:hover td {
+    background: rgb(255 255 255 / 2%);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Loading
+   -------------------------------------------------------------------------- */
+
+.dv-skeleton {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--dv-raised) 25%,
+    #181c22 37%,
+    var(--dv-raised) 63%
+  );
+  background-size: 400% 100%;
+  animation: dv-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes dv-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.dv-enter {
+  animation: dv-fade 0.35s ease both;
+}
+
+@keyframes dv-fade {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Reduced motion
+   --------------------------------------------------------------------------
+   Everything animated above is decorative: status is always carried by a
+   text label, and scan progress by a live region. So motion is removed
+   outright rather than merely shortened.
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-root *,
+  .dv-root *::before,
+  .dv-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .dv-hero[data-scanning="true"]::after {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Print — the report stays readable when exported to PDF by the browser
+   -------------------------------------------------------------------------- */
+
+@media print {
+  body:has(.dv-root) .bs-header {
+    display: none;
+  }
+
+  .dv-root {
+    background: #fff;
+    color: #000;
+  }
+
+  .dv-no-print {
+    display: none !important;
+  }
+}

@@ -18,7 +18,7 @@ import {
   updatePassword,
 } from "firebase/auth";
 
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ShieldAlert } from "lucide-react";
 
 import {
   errorMessage,
@@ -323,6 +323,26 @@ export default function Portal({
           </div>
 
           <nav className="flex flex-wrap gap-3">
+            {/* Internal diagnostics console. Shown only to an administrator,
+                using the same role check as the Admin link below. The link is
+                a convenience, never the control: /api/admin/system-health
+                verifies the token and the admin allow-list itself, so this
+                button being hidden is not what keeps the console private. */}
+            {me.role === "admin" && (
+              <Link
+                href="/admin/system-health"
+                title="System health and security monitoring"
+                className={
+                  isAdminPage
+                    ? "inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-300 backdrop-blur-sm hover:bg-red-500/25 transition"
+                    : secondary
+                }
+              >
+                <ShieldAlert className="h-4 w-4" aria-hidden="true" />
+                Command center
+              </Link>
+            )}
+
             <Link
               href="/dashboard"
               className={
