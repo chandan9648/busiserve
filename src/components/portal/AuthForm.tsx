@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   updateProfile,
 } from "firebase/auth";
@@ -27,6 +29,8 @@ import {
 } from "@/lib/portal/client";
 
 import type { MeResponse } from "@/lib/portal/types";
+
+import GoogleSignInButton from "./GoogleSignInButton";
 
 type Mode = "login" | "register" | "reset";
 
@@ -58,6 +62,117 @@ export default function AuthForm({
 
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Tracked separately from `busy` so the Google button shows its own
+  // progress while the password form stays merely disabled.
+  const [googleBusy, setGoogleBusy] = useState(false);
+
+  /**
+   * Send the signed-in user where they belong.
+   *
+   * Shared by the password and Google paths: the role comes from the
+   * server, never from anything the browser decided, so there is one
+   * place that decides where a session lands.
+   */
+  async function completeSignIn(successMessage: string) {
+    const me = await portalApi<MeResponse>("me");
+
+    toast.success(
+      me.role === "admin" ? "Admin login successful!" : successMessage,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 700));
+
+    router.replace(me.role === "admin" ? "/admin" : "/dashboard");
+  }
+
+  /**
+   * =====================================================
+   * GOOGLE SIGN-IN
+   * =====================================================
+   *
+   * Uses the same `portalAuth()` app as the password flow, so the ID
+   * token it produces is verified by exactly the same server guard —
+   * `authenticate()` needs no change to accept a Google session.
+   *
+   * The login token bucket is deliberately NOT consumed here. That
+   * bucket exists to stop password guessing; Google verifies the
+   * credential itself, so there is no password to guess and charging
+   * an attempt would only lock a legitimate user out of a path that
+   * was never under attack.
+   */
+  async function signInWithGoogle() {
+    if (busy || googleBusy) return;
+
+    setGoogleBusy(true);
+
+    try {
+      const auth = portalAuth();
+      const provider = new GoogleAuthProvider();
+
+      // Always offer the account chooser. Without this, Google reuses
+      // the last account silently, which is confusing on a shared
+      // machine and makes switching accounts look broken.
+      provider.setCustomParameters({ prompt: "select_account" });
+
+      const credential = await signInWithPopup(auth, provider);
+
+      // Force a fresh token so the server sees this sign-in, not a
+      // cached one from an earlier session.
+      await credential.user.getIdToken(true);
+
+      await completeSignIn("Signed in with Google!");
+    } catch (error: unknown) {
+      const code = (error as { code?: string }).code;
+
+      switch (code) {
+        // The user closed the chooser. Not a failure worth shouting about.
+        case "auth/popup-closed-by-user":
+        case "auth/cancelled-popup-request":
+          break;
+
+        case "auth/popup-blocked":
+          toast.error(
+            "Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.",
+          );
+          break;
+
+        case "auth/operation-not-allowed":
+          toast.error(
+            "Google sign-in is not enabled for this project yet. Enable it in the Firebase console under Authentication.",
+          );
+          break;
+
+        case "auth/unauthorized-domain":
+          toast.error(
+            "This domain is not authorised for Google sign-in. Add it in the Firebase console under Authentication settings.",
+          );
+          break;
+
+        case "auth/account-exists-with-different-credential":
+          toast.error(
+            "An account already exists with this email address. Sign in with your password first, then link Google from your profile.",
+          );
+          break;
+
+        case "auth/user-disabled":
+          toast.error(
+            "This account has been disabled. Please contact support.",
+          );
+          break;
+
+        case "auth/network-request-failed":
+          toast.error("Network error. Check your connection and try again.");
+          break;
+
+        default:
+          console.error("GOOGLE AUTH ERROR:", error);
+          toast.error("Google sign-in failed. Please try again.");
+      }
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
 
   const title = {
     login: "Welcome back.",
@@ -243,42 +358,17 @@ export default function AuthForm({
       // Fresh token
       await credential.user.getIdToken(true);
 
-      // Get role from backend
-      const me =
-        await portalApi<MeResponse>("me");
-
-      console.log(
-        "Logged in user:",
-        me,
-      );
-
-      console.log(
-        "Logged in role:",
-        me.role,
-      );
-
-      toast.success(
-        me.role === "admin"
-          ? "Admin login successful!"
-          : "Login successful!",
-      );
-
-      // Give toast time
-      await new Promise((resolve) =>
-        setTimeout(resolve, 700),
-      );
-
       // =====================================================
-      // IMPORTANT:
-      // ADMIN -> /admin
-      // USER  -> /dashboard
+      // Role comes from the server and decides the destination.
+      // ADMIN -> /admin     USER -> /dashboard
+      //
+      // The previous console.log of the whole profile object is gone:
+      // it put the signed-in user's name, email and subscriptions into
+      // the browser console on every login, where anything running on
+      // the page could read them.
       // =====================================================
 
-      if (me.role === "admin") {
-        router.replace("/admin");
-      } else {
-        router.replace("/dashboard");
-      }
+      await completeSignIn("Login successful!");
     } catch (error: unknown) {
       console.error(
         "AUTH ERROR:",
@@ -518,7 +608,7 @@ export default function AuthForm({
 
           <button
             type="submit"
-            disabled={busy}
+            disabled={busy || googleBusy}
             className="w-full rounded-xl bg-[#001b40] px-5 py-3 font-semibold text-white transition hover:bg-[#002855] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy
@@ -530,6 +620,41 @@ export default function AuthForm({
                   : "Send reset email"}
           </button>
         </form>
+
+        {/* GOOGLE
+            Offered for signing in and for creating an account, but not
+            on the password-reset screen: there is no password to reset
+            on a Google account. */}
+
+        {mode !== "reset" && (
+          <>
+            <div className="mt-6 flex items-center gap-3">
+              <span className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                or
+              </span>
+              <span className="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <div className="mt-6">
+              <GoogleSignInButton
+                label={
+                  mode === "register"
+                    ? "Sign up with Google"
+                    : "Sign in with Google"
+                }
+                busy={googleBusy}
+                disabled={busy || googleBusy}
+                onClick={() => void signInWithGoogle()}
+              />
+            </div>
+
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Google verifies your email address, so an account created
+              this way can purchase a plan straight away.
+            </p>
+          </>
+        )}
 
         {/* LINKS */}
 
