@@ -431,7 +431,7 @@ function BarChart({
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0d1a2e] p-6 shadow-xl">
+    <div className="min-w-0 rounded-2xl border border-white/10 bg-[#0d1a2e] p-6 shadow-xl">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-white">
           {title}
@@ -703,7 +703,7 @@ function LineChart({
     } Z`;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0d1a2e] p-6 shadow-xl">
+    <div className="min-w-0 rounded-2xl border border-white/10 bg-[#0d1a2e] p-6 shadow-xl">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-white">
           {title}
