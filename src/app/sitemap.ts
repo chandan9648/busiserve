@@ -1,7 +1,9 @@
 import type { MetadataRoute } from "next";
 
+import { getSiteUrl } from "@/lib/site-url";
+
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.SITE_URL ?? "http://localhost:3000";
+  const base = getSiteUrl();
   const routes = ["/", "/services", "/case-studies", "/pricing", "/about", "/contact", "/privacy", "/terms"];
   return routes.map((route) => ({
     url: `${base}${route}`,
