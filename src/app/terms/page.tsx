@@ -1,4 +1,12 @@
-export const metadata = { title: "Terms of Service" };
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Terms of Service",
+  description:
+    "The terms governing use of the Busiserve Infotech Solution website, client portal, quote process and related development services.",
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -12,12 +13,15 @@ import {
 import { contactDefaults } from "@/lib/site-data";
 import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
+import JsonLd from "@/components/JsonLd";
+import { breadcrumbSchema, contactPageSchema, pageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Contact Us",
   description:
-    "Contact Busiserve to discuss your website, app, business software or automation project.",
-};
+    "Talk to Busiserve Infotech Solution in Noida about your website, app, business software or automation project. Get a free consultation.",
+  path: "/contact",
+});
 
 const focus =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#964900]";
@@ -38,6 +42,8 @@ export default function ContactPage() {
 
   return (
     <>
+      <JsonLd data={breadcrumbSchema([{ name: "Contact Us", path: "/contact" }])} />
+      <JsonLd data={contactPageSchema()} />
       <main
         id="main-content"
         tabIndex={-1}

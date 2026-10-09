@@ -107,12 +107,20 @@ export default function Header() {
           aria-label="Busiserve home"
         >
           <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden sm:h-[72px] sm:w-[72px]">
+            {/*
+              A PNG, not the original .svg. That file is an SVG
+              wrapper around a 1390x1132 base64 PNG, so it carried no
+              vector benefit while next/image skipped optimising it
+              entirely — every visitor downloaded 1 MB for a 72px
+              mark. The dimensions here match the artwork's real
+              aspect ratio; the rendered size is set by the classes.
+            */}
             <Image
-              src="/Busiserve_Infotech_Solution_logo1.svg"
-              alt="Busiserve logo"
+              src="/logo-busiserve.png"
+              alt="Busiserve Infotech Solution"
               aria-hidden="true"
-              width={114}
-              height={114}
+              width={400}
+              height={326}
               priority
               className="block h-full w-full shrink-0 object-contain"
             />

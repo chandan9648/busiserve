@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { privatePageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = privatePageMetadata("Payment Successful");
 
 export default async function PaymentSuccessPage({
   searchParams,

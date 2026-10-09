@@ -20,6 +20,20 @@ import {
 import { prototypeImages, services } from "@/lib/site-data";
 import Footer from "@/components/Footer";
 
+import type { Metadata } from "next";
+import JsonLd from "@/components/JsonLd";
+import { serviceCatalogSchema } from "@/lib/seo";
+
+/**
+ * The title and description are inherited from the root layout; only
+ * the canonical is declared here, because a canonical must never be
+ * inherited — one set on the layout would make every route claim to
+ * be a copy of this page.
+ */
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
+
 type HomeService = {
   title: string;
   short: string;
@@ -93,6 +107,7 @@ const benefits = [
 export default function HomePage() {
   return (
     <>
+      <JsonLd data={serviceCatalogSchema([...services, ...additionalServices.map((service) => ({ title: service.title, description: service.short }))])} />
       <main id="main-content" className="bs-home" tabIndex={-1}>
         {/* Hero */}
         <section className="bs-hero" aria-labelledby="hero-title">

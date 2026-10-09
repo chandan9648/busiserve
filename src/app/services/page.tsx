@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -19,12 +20,15 @@ import {
 import { prototypeImages, approach } from "@/lib/site-data";
 import QuoteForm from "@/components/QuoteForm";
 import Footer from "@/components/Footer";
+import JsonLd from "@/components/JsonLd";
+import { breadcrumbSchema, pageMetadata, serviceCatalogSchema } from "@/lib/seo";
 
-export const metadata = {
-  title: "Services",
+export const metadata: Metadata = pageMetadata({
+  title: "Software Development Services",
   description:
-    "Explore Busiserve’s product development, business software, data and automation services.",
-};
+    "Web and app development, CMS, CRM, ERP, API integration, data science and n8n automation services from Busiserve Infotech Solution, Noida.",
+  path: "/services",
+});
 
 type Solution = {
   title: string;
@@ -201,6 +205,8 @@ const focus =
 export default function ServicesPage() {
   return (
     <>
+      <JsonLd data={breadcrumbSchema([{ name: "Services", path: "/services" }])} />
+      <JsonLd data={serviceCatalogSchema(categories.flatMap((category) => category.items))} />
       <main
         id="main-content"
         tabIndex={-1}

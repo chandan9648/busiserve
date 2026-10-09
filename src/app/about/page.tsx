@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -11,12 +12,15 @@ import {
 
 import { prototypeImages, team } from "@/lib/site-data";
 import Footer from "@/components/Footer";
+import JsonLd from "@/components/JsonLd";
+import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "About Us",
   description:
-    "Meet Busiserve and discover our approach to building useful websites, applications, business systems and automation.",
-};
+    "Meet the Busiserve Infotech Solution team in Noida and how we build websites, apps, business software and automation for startups and enterprises.",
+  path: "/about",
+});
 
 const principles = [
   {
@@ -45,6 +49,7 @@ const focus =
 export default function AboutPage() {
   return (
     <>
+      <JsonLd data={breadcrumbSchema([{ name: "About Us", path: "/about" }])} />
       <main
         id="main-content"
         tabIndex={-1}

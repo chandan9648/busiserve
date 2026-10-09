@@ -1,5 +1,9 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import RazorpayCheckout from "@/components/RazorpayCheckout";
+import { privatePageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = privatePageMetadata("Checkout");
 
 interface Props {
   searchParams: Promise<{

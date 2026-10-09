@@ -1,15 +1,22 @@
+import type { Metadata } from "next";
 import { caseStudies } from "@/lib/site-data";
 import CaseStudyCard from "@/components/CaseStudyCard";
 import { FadeIn } from "@/components/Motion";
 import Footer from "@/components/Footer";
+import JsonLd from "@/components/JsonLd";
+import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Case Studies",
-};
+  description:
+    "Client projects delivered by Busiserve Infotech Solution across web platforms, mobile apps, business software and workflow automation.",
+  path: "/case-studies",
+});
 
 export default function CaseStudiesPage() {
   return (
     <>
+      <JsonLd data={breadcrumbSchema([{ name: "Case Studies", path: "/case-studies" }])} />
       <main>
         <section className="border-b border-[#c3c6d1] bg-white py-20 text-center">
           <div className="container-site">

@@ -1,14 +1,23 @@
+import type { Metadata } from "next";
 import PricingToggle from "@/components/PricingToggle";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
+import JsonLd from "@/components/JsonLd";
+import { faqs } from "@/lib/site-data";
+import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "Pricing",
-};
+export const metadata: Metadata = pageMetadata({
+  title: "Pricing Plans",
+  description:
+    "Transparent pricing for website, app, CMS, CRM and automation projects, with monthly and yearly plans from Busiserve Infotech Solution.",
+  path: "/pricing",
+});
 
 export default function PricingPage() {
   return (
     <>
+      <JsonLd data={breadcrumbSchema([{ name: "Pricing", path: "/pricing" }])} />
+      <JsonLd data={faqSchema(faqs)} />
       <main>
         <section className="container-site py-16 text-center md:py-20">
           <h1 className="text-4xl font-extrabold tracking-tight text-[#001b40] md:text-5xl">

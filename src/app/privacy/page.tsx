@@ -1,4 +1,12 @@
-export const metadata = { title: "Privacy Policy" };
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Privacy Policy",
+  description:
+    "How Busiserve Infotech Solution collects, uses, shares and protects personal information across our website, client portal and payment flow.",
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   return (

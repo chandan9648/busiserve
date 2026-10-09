@@ -186,8 +186,23 @@ export const approach = [
 
 export const contactDefaults = {
   email: process.env.CONTACT_EMAIL ?? "busiserveinfotechsolution@gmail.com",
-  phone: process.env.CONTACT_PHONE ?? "+1 (800) 555-0199",
-  address:
-    process.env.CONTACT_ADDRESS ??
-    "100 Innovation Drive, Suite 400, Tech District, CA 94105",
+  // These fallbacks are the real contact details. The previous ones
+  // described a US office that does not exist, and a wrong number or
+  // address reaching structured data is worse than none: search
+  // engines cross-check a business name, address and phone against
+  // other listings and distrust the set when they disagree.
+  phone: process.env.CONTACT_PHONE ?? "+919794424169",
+  address: process.env.CONTACT_ADDRESS ?? "A1, Sector 59, Noida, Uttar Pradesh",
 } as const;
+
+/**
+ * Public profiles for the organisation, used for schema.org sameAs.
+ *
+ * Unset values are dropped rather than emitted as "#", because one
+ * broken entry is a reason for a crawler to discard the whole set.
+ */
+export const socialLinks: string[] = [
+  process.env.LINKEDIN_URL,
+  process.env.TWITTER_URL,
+  process.env.GITHUB_URL,
+].filter((url): url is string => Boolean(url) && url !== "#");
