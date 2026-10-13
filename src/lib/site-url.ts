@@ -31,7 +31,7 @@ export function getSiteUrl(): string {
   }
 
   if (process.env.NODE_ENV === "development") {
-    return "https://busiserve-crm.vercel.app";
+    return "http://localhost:3000";
   }
 
   return PRODUCTION_SITE_URL;
