@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { getSiteUrl } from "@/lib/site-url";
+import { serviceSlugs, servicePath } from "@/lib/services-catalogue";
 
 /**
  * Only publicly useful routes belong here.
@@ -20,6 +21,18 @@ const routes: {
 }[] = [
   { path: "/", priority: 1.0, changeFrequency: "weekly" },
   { path: "/services", priority: 0.9, changeFrequency: "monthly" },
+
+  /*
+   * The service detail pages, generated from the catalogue so that a
+   * new service cannot be published without a sitemap entry. Ranked
+   * just below /services, which links to all of them.
+   */
+  ...serviceSlugs.map((slug) => ({
+    path: servicePath(slug),
+    priority: 0.8,
+    changeFrequency: "monthly" as const,
+  })),
+
   { path: "/pricing", priority: 0.8, changeFrequency: "monthly" },
   { path: "/case-studies", priority: 0.8, changeFrequency: "monthly" },
   { path: "/contact", priority: 0.7, changeFrequency: "yearly" },

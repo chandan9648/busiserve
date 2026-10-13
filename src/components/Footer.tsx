@@ -1,5 +1,34 @@
 import Link from "next/link";
 
+import {
+  serviceCardTitle,
+  serviceCatalogue,
+  servicePath,
+} from "@/lib/services-catalogue";
+
+/**
+ * The services listed in the footer.
+ *
+ * A subset, kept to the length the column was already designed for.
+ * The labels come from the catalogue so they cannot drift from the
+ * service pages they point at.
+ */
+const footerServices = [
+  "web-development",
+  "wordpress-development",
+  "shopify-development",
+  "app-development",
+  "crm-development",
+]
+  .map((slug) => serviceCatalogue.find((service) => service.slug === slug))
+  .filter((service): service is NonNullable<typeof service> =>
+    Boolean(service),
+  )
+  .map((service) => ({
+    href: servicePath(service.slug),
+    label: serviceCardTitle(service),
+  }));
+
 export default function Footer() {
   return (
     <footer className="bg-[#001b40] text-white">
@@ -62,32 +91,26 @@ export default function Footer() {
           </h3>
 
           <div className="mt-4 flex flex-col gap-3 text-sm text-[#d7e3ff]">
-            <Link
-              href="/services"
-              className="transition-colors hover:text-white"
-            >
-              Web Development
-            </Link>
+            {/*
+              Each of these now points at the service's own page
+              rather than the services index, so the footer carries
+              real internal links instead of five copies of one.
+            */}
+            {footerServices.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="transition-colors hover:text-white"
+              >
+                {item.label}
+              </Link>
+            ))}
 
             <Link
               href="/services"
               className="transition-colors hover:text-white"
             >
-              App Development
-            </Link>
-
-            <Link
-              href="/services"
-              className="transition-colors hover:text-white"
-            >
-              CMS Development
-            </Link>
-
-            <Link
-              href="/services"
-              className="transition-colors hover:text-white"
-            >
-              CRM Solutions
+              All services
             </Link>
 
             <Link

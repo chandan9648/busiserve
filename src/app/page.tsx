@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight,
-  BarChart3,
   Bot,
   Building2,
   Check,
@@ -11,13 +10,17 @@ import {
   Gamepad2,
   Globe2,
   LayoutGrid,
+  PanelsTopLeft,
+  PenTool,
   ShieldCheck,
+  ShoppingBag,
   Smartphone,
   Users,
   Workflow,
 } from "lucide-react";
 
 import { prototypeImages, services } from "@/lib/site-data";
+import { servicePathForTitle } from "@/lib/services-catalogue";
 import Footer from "@/components/Footer";
 
 import type { Metadata } from "next";
@@ -42,9 +45,24 @@ type HomeService = {
 
 const additionalServices: HomeService[] = [
   {
+    title: "WordPress Development",
+    short: "Business Websites You Can Manage Yourself",
+    icon: "panels",
+  },
+  {
+    title: "Shopify Development",
+    short: "Online Stores, Products & Checkout Setup",
+    icon: "shopping-bag",
+  },
+  {
     title: "ERP Development",
     short: "Custom ERP, Inventory & Business Operations",
     icon: "building",
+  },
+  {
+    title: "UI/UX and Graphic Design",
+    short: "Research, Screen Design & Design Systems",
+    icon: "pen",
   },
   {
     title: "Game Design",
@@ -55,11 +73,6 @@ const additionalServices: HomeService[] = [
     title: "API Development",
     short: "Custom APIs, Third-Party Integrations",
     icon: "code",
-  },
-  {
-    title: "Data Science",
-    short: "Data Analysis, Dashboards & Predictive Models",
-    icon: "chart",
   },
   {
     title: "AI Agent Development",
@@ -336,7 +349,9 @@ function ServiceCard({
     gamepad: Gamepad2,
     cloud: Cloud,
     code: Code2,
-    chart: BarChart3,
+    panels: PanelsTopLeft,
+    "shopping-bag": ShoppingBag,
+    pen: PenTool,
     bot: Bot,
     workflow: Workflow,
   };
@@ -344,9 +359,16 @@ function ServiceCard({
   const Icon =
     icons[service.icon as keyof typeof icons] ?? Globe2;
 
+  /*
+   * Link to the service's own page where the catalogue has one, so
+   * the homepage card lands on the matching detail rather than the
+   * top of the services index.
+   */
+  const href = servicePathForTitle(service.title) ?? "/services";
+
   return (
     <Link
-      href="/services"
+      href={href}
       className="bs-service-card"
     >
       <span className="bs-service-icon">

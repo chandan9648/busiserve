@@ -138,6 +138,49 @@ export function serviceCatalogSchema(
 }
 
 /**
+ * A single service, for its own detail page.
+ *
+ * `offers` is emitted only where a verified starting price exists.
+ * An Offer without a price is noise, and an invented one is worse:
+ * Google surfaces it next to the result.
+ */
+export function serviceSchema({
+  name,
+  description,
+  path,
+  startingPrice,
+}: {
+  name: string;
+  description: string;
+  path: string;
+  startingPrice?: number | null;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name,
+    description,
+    url: absoluteUrl(path),
+    serviceType: name,
+    provider: { "@id": ORGANIZATION_ID },
+    areaServed: { "@type": "Country", name: "India" },
+    ...(startingPrice
+      ? {
+          offers: {
+            "@type": "Offer",
+            url: absoluteUrl(path),
+            priceCurrency: "INR",
+            price: startingPrice,
+            availability: "https://schema.org/InStock",
+            description:
+              "Indicative starting price for a one-time project, confirmed in a written proposal.",
+          },
+        }
+      : {}),
+  };
+}
+
+/**
  * FAQPage markup, which can earn an expandable block in the result.
  *
  * Google requires the same question and answer text to be present on

@@ -2,35 +2,103 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { ArrowRight, Menu, UserRound, X } from "lucide-react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import {
+  ArrowRight,
+  Building2,
+  LogOut,
+  Menu,
+  UserRound,
+  X,
+} from "lucide-react";
 
 import { navItems } from "@/lib/site-data";
 import { portalAuth } from "@/lib/portal/client";
 
+/*
+  The header actions share one shape, so only the colours change
+  between states. Holding the strings here keeps the desktop and
+  mobile copy of each button from drifting apart.
+*/
+const actionShape =
+  "inline-flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-3 py-3 text-sm font-semibold no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#964900] motion-reduce:transition-none";
+
+const mobileActionShape =
+  "flex min-h-12 items-center justify-center gap-2 rounded-xl border px-4 py-3 font-semibold no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#964900] motion-reduce:transition-none";
+
+/** Resting state: quiet, warming to the brand orange on hover. */
+const actionQuiet =
+  "border-[#dce3ec] bg-white text-[#001b40] hover:border-[#e8a571] hover:bg-[#fff0e4]";
+
+/*
+  "You are here". Filled navy rather than the nav link underline,
+  because these read as buttons and that treatment reads as a label.
+*/
+const actionCurrent =
+  "border-[#001b40] bg-[#001b40] text-white hover:border-[#003066] hover:bg-[#003066]";
+
+/*
+  Signing out ends a session, so the button stays neutral at rest and
+  only turns red under the pointer, where the intent is deliberate.
+*/
+const actionSignOut =
+  "border-[#dce3ec] bg-white text-[#434750] hover:border-[#f2cfcd] hover:bg-[#fdecec] hover:text-[#b3261e] disabled:cursor-not-allowed disabled:opacity-60";
+
+/*
+  Every signed-in area the account button leads into. Checkout and
+  payment belong to that journey, so the button stays marked as the
+  current page while a visitor moves through them.
+*/
+const accountSection = ["/dashboard", "/admin", "/checkout", "/payment"];
+
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const [menuPath, setMenuPath] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const open = menuPath !== null && menuPath === pathname;
 
   const toggleRef = useRef<HTMLButtonElement>(null);
   const headerRef = useRef<HTMLElement>(null);
 
+  // The CRM lives outside this app, so it is a plain external link.
+  const crmHref = "https://localhost:3000";
+
   const accountHref = signedIn ? "/dashboard" : "/login";
-  const accountLabel = signedIn ? "My Account" : "Login";
+  const accountLabel = signedIn ? "My Profile" : "Login";
 
   const isActive = (href: string) =>
     href === "/"
       ? pathname === "/"
       : pathname === href || pathname.startsWith(`${href}/`);
 
+  const accountCurrent = signedIn
+    ? accountSection.some((path) => isActive(path))
+    : isActive("/login");
+
   const closeMenu = () => setMenuPath(null);
+
+  async function handleSignOut() {
+    if (signingOut) return;
+
+    setSigningOut(true);
+    closeMenu();
+
+    try {
+      await signOut(portalAuth());
+      // The auth listener then unmounts this button, so it needs no reset.
+      router.replace("/");
+    } catch {
+      // The session survived, so leave the button usable for a retry.
+      setSigningOut(false);
+    }
+  }
 
   // Listen to the same Firebase Authentication instance used by the portal.
   useEffect(() => {
@@ -160,17 +228,48 @@ export default function Header() {
 
         {/* Desktop account and contact actions */}
         <div className="hidden shrink-0 items-center gap-2 min-[1200px]:flex">
+          <a
+            href={crmHref}
+            className={`${actionShape} ${actionQuiet}`}
+          >
+            <Building2 size={18} aria-hidden="true" />
+            Company CRM
+          </a>
+
           {authReady ? (
-            <Link
-              href={accountHref}
-              aria-current={
-                isActive(accountHref) ? "page" : undefined
-              }
-              className="inline-flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#dce3ec] bg-white px-3 py-3 text-sm font-semibold text-[#001b40] transition-colors hover:border-[#e8a571] hover:bg-[#fff0e4] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#964900] motion-reduce:transition-none"
-            >
-              <UserRound size={18} aria-hidden="true" />
-              {accountLabel}
-            </Link>
+            <>
+              <Link
+                href={accountHref}
+                aria-current={accountCurrent ? "page" : undefined}
+                className={`${actionShape} ${
+                  accountCurrent ? actionCurrent : actionQuiet
+                }`}
+              >
+                <UserRound size={18} aria-hidden="true" />
+                {accountLabel}
+              </Link>
+
+              {signedIn && (
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  disabled={signingOut}
+                  title="Sign out"
+                  aria-label="Sign out"
+                  className={`${actionShape} ${actionSignOut}`}
+                >
+                  <LogOut size={18} aria-hidden="true" />
+
+                  {/*
+                    The label needs room that the 1200px breakpoint
+                    does not have once the CRM button joins the row.
+                  */}
+                  <span className="hidden min-[1366px]:inline">
+                    {signingOut ? "Signing out…" : "Sign out"}
+                  </span>
+                </button>
+              )}
+            </>
           ) : (
             <span
               className="inline-flex min-h-12 w-28 items-center justify-center rounded-xl bg-[#eef3fa]"
@@ -233,18 +332,41 @@ export default function Header() {
 
           <div className="my-2 border-t border-[#dce3ec]" />
 
+          <a
+            href={crmHref}
+            onClick={closeMenu}
+            className={`${mobileActionShape} ${actionQuiet}`}
+          >
+            <Building2 size={19} aria-hidden="true" />
+            Company CRM
+          </a>
+
           {authReady ? (
-            <Link
-              href={accountHref}
-              onClick={closeMenu}
-              aria-current={
-                isActive(accountHref) ? "page" : undefined
-              }
-              className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#dce3ec] bg-white px-4 py-3 font-semibold text-[#001b40] hover:bg-[#fff0e4] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#964900]"
-            >
-              <UserRound size={19} aria-hidden="true" />
-              {accountLabel}
-            </Link>
+            <>
+              <Link
+                href={accountHref}
+                onClick={closeMenu}
+                aria-current={accountCurrent ? "page" : undefined}
+                className={`${mobileActionShape} ${
+                  accountCurrent ? actionCurrent : actionQuiet
+                }`}
+              >
+                <UserRound size={19} aria-hidden="true" />
+                {accountLabel}
+              </Link>
+
+              {signedIn && (
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  disabled={signingOut}
+                  className={`${mobileActionShape} ${actionSignOut}`}
+                >
+                  <LogOut size={19} aria-hidden="true" />
+                  {signingOut ? "Signing out…" : "Sign out"}
+                </button>
+              )}
+            </>
           ) : (
             <p
               role="status"

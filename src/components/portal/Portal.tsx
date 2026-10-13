@@ -8,13 +8,12 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   EmailAuthProvider,
   onAuthStateChanged,
   reauthenticateWithCredential,
   sendEmailVerification,
-  signOut,
   updatePassword,
 } from "firebase/auth";
 
@@ -182,6 +181,10 @@ const button =
 const secondary =
   "inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold disabled:opacity-50";
 
+/* The light-theme "you are here" state, filled to match the site header. */
+const secondaryCurrent =
+  "inline-flex items-center justify-center rounded-xl border border-[#001b40] bg-[#001b40] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50";
+
 const input =
   "mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-2 focus:outline-orange-500";
 
@@ -208,6 +211,7 @@ export default function Portal({
   profileOnly?: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   const [me, setMe] = useState<MeResponse | null>(null);
   const [message, setMessage] = useState("");
@@ -267,15 +271,6 @@ export default function Portal({
     };
   }, [admin, profileOnly, router]);
 
-  async function logout() {
-    try {
-      await signOut(portalAuth());
-      router.replace("/login");
-    } catch (error) {
-      setMessage(errorMessage(error));
-    }
-  }
-
   if (!me) {
     return (
       <main className="container-site py-16">
@@ -294,6 +289,30 @@ export default function Portal({
   }
 
   const isAdminPage = admin || profileOnly;
+
+  /*
+    Which nav button is the page you are on. /dashboard and
+    /admin/profile both render the same account form, so either one
+    marks "My account" as current.
+  */
+  const onAccount =
+    pathname === "/dashboard" || pathname === "/admin/profile";
+  const onAdmin = pathname === "/admin";
+  const onCommandCenter = pathname.startsWith("/admin/system-health");
+
+  /* The two themes need their own filled state, so each link passes both. */
+  const navClass = (
+    current: boolean,
+    darkIdle: string,
+    darkCurrent: string,
+  ) =>
+    isAdminPage
+      ? current
+        ? darkCurrent
+        : darkIdle
+      : current
+        ? secondaryCurrent
+        : secondary;
 
   return (
     <main
@@ -331,63 +350,57 @@ export default function Portal({
             </h1>
           </div>
 
-          <nav className="flex flex-wrap gap-3">
-            {/* Internal diagnostics console. Shown only to an administrator,
-                using the same role check as the Admin link below. The link is
-                a convenience, never the control: /api/admin/system-health
-                verifies the token and the admin allow-list itself, so this
-                button being hidden is not what keeps the console private. */}
-            {me.role === "admin" && (
+          {/* Sign out lives in the site header on every page, so it is
+              not repeated here. My account stays, because it is an
+              administrator's only route from the admin areas back to
+              their own profile and password form. A customer reaches
+              both from the site header, so they see no nav at all. */}
+          {me.role === "admin" && (
+            <nav className="flex flex-wrap gap-3">
+              {/* Internal diagnostics console. Shown only to an administrator,
+                  using the same role check as the Admin link below. The link is
+                  a convenience, never the control: /api/admin/system-health
+                  verifies the token and the admin allow-list itself, so this
+                  button being hidden is not what keeps the console private. */}
               <Link
                 href="/admin/system-health"
                 title="System health and security monitoring"
-                className={
-                  isAdminPage
-                    ? "inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-300 backdrop-blur-sm hover:bg-red-500/25 transition"
-                    : secondary
-                }
+                aria-current={onCommandCenter ? "page" : undefined}
+                className={navClass(
+                  onCommandCenter,
+                  "inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-300 backdrop-blur-sm hover:bg-red-500/25 transition",
+                  "inline-flex items-center justify-center gap-2 rounded-xl border border-red-400 bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition",
+                )}
               >
                 <ShieldAlert className="h-4 w-4" aria-hidden="true" />
                 Command center
               </Link>
-            )}
 
-            <Link
-              href="/dashboard"
-              className={
-                isAdminPage
-                  ? "inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/20 transition"
-                  : secondary
-              }
-            >
-              My account
-            </Link>
+              <Link
+                href="/dashboard"
+                aria-current={onAccount ? "page" : undefined}
+                className={navClass(
+                  onAccount,
+                  "inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/20 transition",
+                  "inline-flex items-center justify-center rounded-xl border border-white bg-white px-4 py-2 text-sm font-semibold text-[#060d1a] hover:bg-white/90 transition",
+                )}
+              >
+                My account
+              </Link>
 
-            {me.role === "admin" && (
               <Link
                 href="/admin"
-                className={
-                  isAdminPage
-                    ? "inline-flex items-center justify-center rounded-xl border border-indigo-500/40 bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-300 backdrop-blur-sm hover:bg-indigo-500/30 transition"
-                    : secondary
-                }
+                aria-current={onAdmin ? "page" : undefined}
+                className={navClass(
+                  onAdmin,
+                  "inline-flex items-center justify-center rounded-xl border border-indigo-500/40 bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-300 backdrop-blur-sm hover:bg-indigo-500/30 transition",
+                  "inline-flex items-center justify-center rounded-xl border border-indigo-400 bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 transition",
+                )}
               >
                 Admin
               </Link>
-            )}
-
-            <button
-              type="button"
-              onClick={logout}
-              className={
-                isAdminPage
-                  ? "inline-flex items-center justify-center cursor-pointer rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-400 backdrop-blur-sm hover:bg-rose-500/20 transition"
-                  : secondary
-              }
-            >
-              Sign out
-            </button>
-          </nav>
+            </nav>
+          )}
         </header>
 
         {message && (

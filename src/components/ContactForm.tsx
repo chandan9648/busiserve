@@ -1,16 +1,22 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { contactSchema, type ContactInput } from "@/lib/validation";
 import { Send } from "lucide-react";
 
+import { serviceCatalogue } from "@/lib/services-catalogue";
+
+/**
+ * Subject options.
+ *
+ * The service entries come from the catalogue, so a "Discuss your
+ * project" link can carry its service across as ?subject= and find a
+ * matching option here.
+ */
 const subjects = [
   "General Inquiry",
-  "Web Development",
-  "App Development",
-  "CMS Development",
-  "CRM Solutions",
+  ...serviceCatalogue.map((service) => service.enquiryValue),
   "Partnership",
 ];
 
@@ -40,12 +46,29 @@ export default function ContactForm() {
     register,
     handleSubmit,
     reset,
+    setValue,
     setError,
     clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<ContactInput>({
     defaultValues,
   });
+
+  /*
+   * A ?subject= parameter pre-selects the subject, so a service page
+   * can send a visitor here with the context they clicked on. Read
+   * from the location rather than useSearchParams, which would put
+   * the contact page behind a Suspense boundary at prerender.
+   */
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get(
+      "subject",
+    );
+
+    if (requested && subjects.includes(requested)) {
+      setValue("subject", requested);
+    }
+  }, [setValue]);
 
   async function onSubmit(values: ContactInput) {
     clearErrors();

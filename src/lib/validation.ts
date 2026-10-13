@@ -50,6 +50,24 @@ export const quoteSchema = z.object({
     .trim()
     .min(2, "Please select or enter your interest.")
     .max(80, "Interest cannot exceed 80 characters."),
+
+  /*
+   * Added for the service detail pages, which carry the selected
+   * service into the enquiry. Both are optional so that quotes
+   * submitted from the short form on /services — and every quote
+   * already stored — remain valid against this schema.
+   */
+  budget: z
+    .string()
+    .trim()
+    .max(80, "Budget cannot exceed 80 characters.")
+    .optional(),
+
+  requirements: z
+    .string()
+    .trim()
+    .max(5000, "Project details cannot exceed 5000 characters.")
+    .optional(),
 });
 
 export type ContactInput = z.infer<typeof contactSchema>;

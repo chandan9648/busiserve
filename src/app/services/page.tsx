@@ -1,23 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  ArrowRight,
-  BarChart3,
-  Bot,
-  Building2,
-  Check,
-  Code2,
-  Gamepad2,
-  Globe2,
-  LayoutGrid,
-  Smartphone,
-  Users,
-  Workflow,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 
 import { prototypeImages, approach } from "@/lib/site-data";
+import {
+  serviceCardTitle,
+  serviceCatalogue,
+  serviceCategories,
+  servicePath,
+  type ServiceDetail,
+} from "@/lib/services-catalogue";
 import QuoteForm from "@/components/QuoteForm";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
@@ -26,187 +19,28 @@ import { breadcrumbSchema, pageMetadata, serviceCatalogSchema } from "@/lib/seo"
 export const metadata: Metadata = pageMetadata({
   title: "Software Development Services",
   description:
-    "Web and app development, CMS, CRM, ERP, API integration, data science and n8n automation services from Busiserve Infotech Solution, Noida.",
+    "Website, WordPress, Shopify and app development, UI/UX design, CMS, CRM, ERP, API integration and n8n automation services from Busiserve Infotech Solution, Noida.",
   path: "/services",
 });
 
-type Solution = {
-  title: string;
-  icon: LucideIcon;
-  description: string;
-  deliverables: string[];
-};
-
-type Category = {
-  id: string;
-  number: string;
-  label: string;
-  title: string;
-  description: string;
-  items: Solution[];
-};
-
-const categories: Category[] = [
-  {
-    id: "digital-products",
-    number: "01",
-    label: "Digital products",
-    title: "Build something people want to use.",
-    description:
-      "Create your next customer experience, from a business website to an app or an interactive game.",
-    items: [
-      {
-        title: "Web Development",
-        icon: Globe2,
-        description:
-          "A responsive website or web application shaped around your customers and business goals.",
-        deliverables: [
-          "Responsive interface development",
-          "Custom pages and business features",
-          "Forms and third-party integrations",
-        ],
-      },
-      {
-        title: "App Development",
-        icon: Smartphone,
-        description:
-          "Bring your service to mobile with focused journeys and interfaces designed for smaller screens.",
-        deliverables: [
-          "iOS, Android or cross-platform apps",
-          "User journeys and app interfaces",
-          "Backend and API integration",
-        ],
-      },
-      {
-        title: "Game Design",
-        icon: Gamepad2,
-        description:
-          "Turn an idea into an interactive experience with clear mechanics and a considered player journey.",
-        deliverables: [
-          "Game concepts and core mechanics",
-          "Player flows and interface design",
-          "Interactive prototypes",
-        ],
-      },
-    ],
-  },
-  {
-    id: "business-systems",
-    number: "02",
-    label: "Business systems",
-    title: "Give your operations a better foundation.",
-    description:
-      "Organise your content, customer relationships and internal processes with software built for your team.",
-    items: [
-      {
-        title: "CMS Development",
-        icon: LayoutGrid,
-        description:
-          "Make publishing and maintaining your content easier with an organised editing experience.",
-        deliverables: [
-          "WordPress, Drupal or custom CMS",
-          "Content models and editing workflows",
-          "Roles and publishing permissions",
-        ],
-      },
-      {
-        title: "CRM Solutions",
-        icon: Users,
-        description:
-          "Keep leads, customer history and follow-ups in one place so your team can act with context.",
-        deliverables: [
-          "Lead and customer management",
-          "Sales pipelines and follow-ups",
-          "Reports and workflow integrations",
-        ],
-      },
-      {
-        title: "ERP Development",
-        icon: Building2,
-        description:
-          "Connect key business functions and reduce the friction of working across disconnected tools.",
-        deliverables: [
-          "Inventory and operational modules",
-          "Finance and HR workflows",
-          "Role-based dashboards and reporting",
-        ],
-      },
-    ],
-  },
-  {
-    id: "connected-platforms",
-    number: "03",
-    label: "Connected platforms",
-    title: "Connect your tools. Strengthen your systems.",
-    description:
-      "Help applications work together while taking a considered approach to access, reliability and security.",
-    items: [
-      {
-        title: "API Development",
-        icon: Code2,
-        description:
-          "Build the connections your products need to exchange information and support new functionality.",
-        deliverables: [
-          "Custom API endpoints",
-          "Third-party service integrations",
-          "Authentication and API documentation",
-        ],
-      },
-    ],
-  },
-  {
-    id: "intelligence-automation",
-    number: "04",
-    label: "Intelligence & automation",
-    title: "Make more of your data. Do less repetitive work.",
-    description:
-      "Explore insights, intelligent assistance and connected workflows that support your everyday decisions.",
-    items: [
-      {
-        title: "Data Science",
-        icon: BarChart3,
-        description:
-          "Explore your business data and turn patterns into insights your team can understand and use.",
-        deliverables: [
-          "Data preparation and analysis",
-          "Dashboards and visual reporting",
-          "Predictive model development",
-        ],
-      },
-      {
-        title: "AI Agent Development",
-        icon: Bot,
-        description:
-          "Build assistants around your knowledge and tools, with review and controls suited to the task.",
-        deliverables: [
-          "Knowledge-connected assistants",
-          "Business tool and API connections",
-          "Human review and approval steps",
-        ],
-      },
-      {
-        title: "Automation (n8n)",
-        icon: Workflow,
-        description:
-          "Connect the apps you already use and reduce manual work across recurring business processes.",
-        deliverables: [
-          "n8n workflow development",
-          "Lead routing and notifications",
-          "Data syncing and scheduled tasks",
-        ],
-      },
-    ],
-  },
-];
-
 const focus =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#964900]";
+
+/** Two digits, to match the typographic treatment of the category numbers. */
+const padded = (value: number) => String(value).padStart(2, "0");
 
 export default function ServicesPage() {
   return (
     <>
       <JsonLd data={breadcrumbSchema([{ name: "Services", path: "/services" }])} />
-      <JsonLd data={serviceCatalogSchema(categories.flatMap((category) => category.items))} />
+      <JsonLd
+        data={serviceCatalogSchema(
+          serviceCatalogue.map((service) => ({
+            title: service.title,
+            description: service.short,
+          })),
+        )}
+      />
       <main
         id="main-content"
         tabIndex={-1}
@@ -252,7 +86,7 @@ export default function ServicesPage() {
                   href="#quote"
                   className={`inline-flex min-h-12 items-center justify-center gap-3 rounded-xl border border-[#bcc9d9] px-6 py-3.5 font-semibold hover:bg-white ${focus}`}
                 >
-                  Discuss a project
+                  Start a project enquiry
                   <ArrowRight size={18} aria-hidden="true" />
                 </a>
               </div>
@@ -260,7 +94,7 @@ export default function ServicesPage() {
               <div className="mt-9 flex flex-wrap gap-x-8 gap-y-4 border-t border-[#dce3ec] pt-6">
                 <p>
                   <strong className="text-2xl font-extrabold">
-                    12
+                    {padded(serviceCatalogue.length)}
                   </strong>
                   <span className="ml-2 text-sm text-[#434750]">
                     specialist services
@@ -269,7 +103,7 @@ export default function ServicesPage() {
 
                 <p>
                   <strong className="text-2xl font-extrabold">
-                    04
+                    {padded(serviceCategories.length)}
                   </strong>
                   <span className="ml-2 text-sm text-[#434750]">
                     areas of expertise
@@ -318,8 +152,8 @@ export default function ServicesPage() {
           aria-label="Service categories"
           className="scroll-mt-28 border-b border-[#dce3ec] bg-white"
         >
-          <div className="container-site grid grid-cols-1 gap-2 py-5 sm:grid-cols-2 xl:grid-cols-4">
-            {categories.map((category) => (
+          <div className="container-site grid grid-cols-1 gap-2 py-5 sm:grid-cols-2 xl:grid-cols-5">
+            {serviceCategories.map((category) => (
               <a
                 key={category.id}
                 href={`#${category.id}`}
@@ -339,46 +173,51 @@ export default function ServicesPage() {
         </nav>
 
         {/* Service Categories */}
-        {categories.map((category, index) => (
-          <section
-            key={category.id}
-            id={category.id}
-            aria-labelledby={`${category.id}-title`}
-            className={`scroll-mt-24 border-b border-[#e5ebf2] py-14 md:py-20 ${
-              index % 2 ? "bg-[#f7f9fc]" : "bg-white"
-            }`}
-          >
-            <div className="container-site">
-              <div className="mb-9 grid gap-5 lg:grid-cols-[1.2fr_1fr] lg:items-end lg:gap-16">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#964900]">
-                    {category.number} / {category.label}
-                  </p>
+        {serviceCategories.map((category, index) => {
+          const items = category.services
+            .map((slug) =>
+              serviceCatalogue.find((service) => service.slug === slug),
+            )
+            .filter((service): service is ServiceDetail => Boolean(service));
 
-                  <h2
-                    id={`${category.id}-title`}
-                    className="mt-4 max-w-2xl text-3xl font-extrabold leading-tight tracking-tight md:text-4xl"
-                  >
-                    {category.title}
-                  </h2>
+          return (
+            <section
+              key={category.id}
+              id={category.id}
+              aria-labelledby={`${category.id}-title`}
+              className={`scroll-mt-24 border-b border-[#e5ebf2] py-14 md:py-20 ${
+                index % 2 ? "bg-[#f7f9fc]" : "bg-white"
+              }`}
+            >
+              <div className="container-site">
+                <div className="mb-9 grid gap-5 lg:grid-cols-[1.2fr_1fr] lg:items-end lg:gap-16">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#964900]">
+                      {category.number} / {category.label}
+                    </p>
+
+                    <h2
+                      id={`${category.id}-title`}
+                      className="mt-4 max-w-2xl text-3xl font-extrabold leading-tight tracking-tight md:text-4xl"
+                    >
+                      {category.title}
+                    </h2>
+                  </div>
+
+                  <p className="max-w-xl leading-8 text-[#434750]">
+                    {category.description}
+                  </p>
                 </div>
 
-                <p className="max-w-xl leading-8 text-[#434750]">
-                  {category.description}
-                </p>
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {items.map((service) => (
+                    <DetailedService key={service.slug} service={service} />
+                  ))}
+                </div>
               </div>
-
-              <div className="grid gap-5 lg:grid-cols-3">
-                {category.items.map((service) => (
-                  <DetailedService
-                    key={service.title}
-                    service={service}
-                  />
-                ))}
-              </div>
-            </div>
-          </section>
-        ))}
+            </section>
+          );
+        })}
 
         {/* Approach */}
         <section
@@ -488,7 +327,18 @@ export default function ServicesPage() {
             </div>
 
             <div className="min-w-0 rounded-2xl border border-[#dce3ec] bg-white p-6 shadow-sm md:p-9">
-              <QuoteForm />
+              <h3 className="text-xl font-bold tracking-tight">
+                Start a project enquiry
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-[#434750]">
+                Every service is quoted after a requirement discussion. Send
+                the details and we will come back with next steps.
+              </p>
+
+              <div className="mt-6">
+                <QuoteForm showProjectFields submitLabel="Send enquiry" />
+              </div>
             </div>
           </div>
         </section>
@@ -500,27 +350,47 @@ export default function ServicesPage() {
   );
 }
 
-function DetailedService({
-  service,
-}: {
-  service: Solution;
-}) {
+/**
+ * A service card.
+ *
+ * The footer action now opens the service's own detail page rather
+ * than jumping to the form at the bottom of this page, which gave
+ * the enquiry no context about what the visitor had clicked.
+ */
+function DetailedService({ service }: { service: ServiceDetail }) {
   const Icon = service.icon;
+  const title = serviceCardTitle(service);
 
   return (
     <article className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#dce3ec] bg-white">
-      <div className="flex-1 p-6 md:p-7">
+      <div className="flex flex-1 flex-col p-6 md:p-7">
         <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-[#001b40] text-[#ffac69]">
           <Icon size={24} aria-hidden="true" />
         </div>
 
         <h3 className="text-xl font-bold tracking-tight">
-          {service.title}
+          <Link
+            href={servicePath(service.slug)}
+            className={`rounded-sm hover:text-[#964900] ${focus}`}
+          >
+            {title}
+          </Link>
         </h3>
 
         <p className="mt-3 text-sm leading-7 text-[#434750]">
-          {service.description}
+          {service.short}
         </p>
+
+        <ul className="mt-5 flex list-none flex-wrap gap-2 p-0">
+          {service.techBadges.map((badge) => (
+            <li
+              key={badge}
+              className="rounded-md border border-[#dce3ec] bg-[#f7f9fc] px-2.5 py-1 text-[11px] font-semibold text-[#003066]"
+            >
+              {badge}
+            </li>
+          ))}
+        </ul>
 
         <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.14em] text-[#964900]">
           What we can help with
@@ -544,14 +414,14 @@ function DetailedService({
         </ul>
       </div>
 
-      <a
-        href="#quote"
-        aria-label={`Discuss ${service.title}`}
+      <Link
+        href={servicePath(service.slug)}
+        aria-label={`Discuss ${title} — view service details`}
         className={`flex min-h-14 items-center justify-between gap-3 border-t border-[#e5ebf2] bg-[#f7f9fc] px-6 py-4 text-sm font-bold hover:bg-[#fff0e4] md:px-7 ${focus}`}
       >
         Discuss this service
         <ArrowRight size={18} aria-hidden="true" />
-      </a>
+      </Link>
     </article>
   );
 }
