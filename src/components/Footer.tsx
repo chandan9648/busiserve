@@ -142,12 +142,6 @@ export default function Footer() {
             >
               Terms of Service
             </Link>
-             <Link
-              href="https://busiserve-crm.vercel.app/login"
-              className="transition-colors hover:text-white"
-            >
-              CRM Login
-            </Link>
 
             <a
               href={process.env.LINKEDIN_URL ?? "#"}
