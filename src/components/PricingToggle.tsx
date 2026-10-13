@@ -65,7 +65,13 @@ export default function PricingToggle() {
 
         <p className="mt-4 text-base leading-7 text-[#434750]">
           Choose how many small changes you need. Each plan covers one
-          existing website for one calendar month.
+          existing website for one calendar month.{" "}
+          <span className="font-bold text-[#b91c1c]">
+            These plans are for changes to a website you already have —
+            they do not include building a new website. If you need a new
+            website built, that is a separate quotation, even after you
+            buy a plan.
+          </span>
         </p>
 
         <p className="mt-2 text-sm leading-6 text-[#434750]">

@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { getSiteUrl } from "@/lib/site-url";
 import { serviceSlugs, servicePath } from "@/lib/services-catalogue";
+import { caseStudySlugs, caseStudyPath } from "@/lib/case-studies";
 
 /**
  * Only publicly useful routes belong here.
@@ -35,6 +36,17 @@ const routes: {
 
   { path: "/pricing", priority: 0.8, changeFrequency: "monthly" },
   { path: "/case-studies", priority: 0.8, changeFrequency: "monthly" },
+
+  /*
+   * The case study detail pages, generated from the catalogue for the
+   * same reason as the service pages above.
+   */
+  ...caseStudySlugs.map((slug) => ({
+    path: caseStudyPath(slug),
+    priority: 0.7,
+    changeFrequency: "monthly" as const,
+  })),
+
   { path: "/contact", priority: 0.7, changeFrequency: "yearly" },
   { path: "/about", priority: 0.6, changeFrequency: "yearly" },
   { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },

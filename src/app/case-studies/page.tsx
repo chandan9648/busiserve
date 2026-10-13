@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { caseStudies } from "@/lib/site-data";
+import { caseStudyCards } from "@/lib/case-studies";
 import CaseStudyCard from "@/components/CaseStudyCard";
 import { FadeIn } from "@/components/Motion";
 import Footer from "@/components/Footer";
@@ -34,7 +34,7 @@ export default function CaseStudiesPage() {
 
         <section className="bg-[#f7fafd] py-20">
           <div className="container-site grid gap-6 lg:grid-cols-3">
-            {caseStudies.map((study, index) => (
+            {caseStudyCards.map((study, index) => (
               <FadeIn
                 key={study.title}
                 delay={index * 0.08}

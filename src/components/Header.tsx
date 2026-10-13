@@ -92,7 +92,8 @@ export default function Header() {
 
     try {
       await signOut(portalAuth());
-      // The auth listener then unmounts this button, so it needs no reset.
+      // The header survives the navigation, so the button has to reset itself.
+      setSigningOut(false);
       router.replace("/");
     } catch {
       // The session survived, so leave the button usable for a retry.
@@ -107,10 +108,13 @@ export default function Header() {
       (user) => {
         setSignedIn(Boolean(user));
         setAuthReady(true);
+        // A new session means any earlier sign-out is finished.
+        if (user) setSigningOut(false);
       },
       () => {
         setSignedIn(false);
         setAuthReady(true);
+        setSigningOut(false);
       },
     );
 

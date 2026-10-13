@@ -66,35 +66,17 @@ export const services = [
   },
 ] as const;
 
-export const caseStudies = [
-  {
-    category: "Finance",
-    title: "Fintech App Revolution",
-    description:
-      "Re-architected a legacy financial application for a global bank, resulting in a 40% increase in user retention and a significant reduction in transaction latency.",
-    image: prototypeImages.case1,
-  },
-  {
-    category: "Retail",
-    title: "E-commerce Scale-up",
-    description:
-      "Developed a robust, scalable infrastructure for a rapidly growing online retailer, ensuring seamless performance during peak holiday traffic spikes.",
-    image: prototypeImages.case2,
-  },
-  {
-    category: "Technology",
-    title: "Enterprise CMS Migration",
-    description:
-      "Successfully migrated a multinational corporation's complex content ecosystem to a modern headless CMS, improving editorial workflows by 60%.",
-    image: prototypeImages.case3,
-  },
-] as const;
+/*
+ * The case studies moved to `@/lib/case-studies`, which carries the
+ * detail-page content alongside these card fields so that the card,
+ * the page and the sitemap entry all come from one record.
+ */
 
 export const team = [
-  { name: "Sarfaraj Alam", role: "CEO", image: "/sarfaraj.svg" },
+  { name: "Sarfaraj Alam", role: "Co-Founder", image: "/sarfaraj.svg" },
   { name: "Chandan Chaudhary", role: "Founder", image: "/chandan.svg" },
   { name: "Rahul Bhardwaj", role: "Chief Technology Officer", image: "/rahul.svg" },
-  { name: "Unknown", role: "Head of Product", image: prototypeImages.team3 },
+  { name: "Adriene Ann Belaro", role: "Head of Product", image: prototypeImages.team3 },
 
 ] as const;
 

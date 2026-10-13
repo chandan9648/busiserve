@@ -81,6 +81,17 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   serverExternalPackages: ["firebase-admin"],
 
+  experimental: {
+    // "Collecting page data" otherwise spawns one worker per core. On an
+    // eleven-core machine that is eleven Node processes at once, which
+    // exhausts memory and fast-fails the build. A site this size does not
+    // need that parallelism.
+    cpus: 2,
+    // Keeps the worker count from being scaled back up on a machine that
+    // momentarily reports plenty of free memory.
+    memoryBasedWorkersCount: false,
+  },
+
   // Removes the framework fingerprint from every response.
   poweredByHeader: false,
 
