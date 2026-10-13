@@ -67,10 +67,9 @@ export default function PricingToggle() {
           Choose how many small changes you need. Each plan covers one
           existing website for one calendar month.{" "}
           <span className="font-bold text-[#b91c1c]">
-            These plans are for changes to a website you already have —
-            they do not include building a new website. If you need a new
-            website built, that is a separate quotation, even after you
-            buy a plan.
+            These plans are exclusively for changes, updates, and modifications to projects
+            previously developed and delivered by Busiserve. They do not include new project
+            development, which requires a separate quotation even after purchasing a plan.
           </span>
         </p>
 
