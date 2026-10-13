@@ -68,7 +68,7 @@ export default function Header() {
   const headerRef = useRef<HTMLElement>(null);
 
   // The CRM lives outside this app, so it is a plain external link.
-  const crmHref = "https://localhost:3000";
+  const crmHref = "https://busiserve-crm.vercel.app/";
 
   const accountHref = signedIn ? "/dashboard" : "/login";
   const accountLabel = signedIn ? "My Profile" : "Login";
