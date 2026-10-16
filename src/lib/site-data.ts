@@ -76,7 +76,7 @@ export const team = [
   { name: "Sarfaraj Alam", role: "Co-Founder", image: "/sarfaraj.svg" },
   { name: "Chandan Chaudhary", role: "Founder", image: "/chandan.svg" },
   { name: "Rahul Bhardwaj", role: "Chief Technology Officer", image: "/rahul.svg" },
-  { name: "Adriene Ann Belaro", role: "Head of Product", image: prototypeImages.team3 },
+  { name: "Adriene Ann Belaro", role: "Head of Product", image: "/ann.jpeg" },
 
 ] as const;
 
