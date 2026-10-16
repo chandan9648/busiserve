@@ -80,6 +80,18 @@ export const team = [
 
 ] as const;
 
+/**
+ * @deprecated Not a price list. Nothing reads this.
+ *
+ * These figures are an early draft that never matched what the site
+ * sells. `PLANS` in `@/lib/portal/plans` is the single source of
+ * truth for plan names, prices and allowances: the pricing page, the
+ * dashboard, the checkout page and the order API all price from it.
+ *
+ * Kept only so the history of the figures is not lost. Do not price,
+ * charge or display anything from here — a second price list is how
+ * a website ends up charging an amount it does not advertise.
+ */
 export const pricingPlans = [
   {
     name: "Essential",
@@ -122,26 +134,43 @@ export const pricingPlans = [
   },
 ] as const;
 
+/*
+ * These answers are published on /pricing and are also emitted as
+ * FAQ structured data, so each one has to match what the plans
+ * actually do. An answer here that promises more than the plan
+ * covers is a contradiction a customer — or a payment provider
+ * reviewing the site — will find on the same page as the price.
+ */
 export const faqs = [
+  {
+    question: "What exactly does a plan cover?",
+    answer:
+      "One calendar month of small changes to one existing website that Busiserve has already built and delivered — for example replacing text or an image you provide, updating a contact detail, or adjusting spacing in a section. Each plan states how many change requests it includes, and we confirm the scope of a request before starting it.",
+  },
+  {
+    question: "Can I buy a plan for a new website?",
+    answer:
+      "No. The plans are only for changes to a website Busiserve has already developed and delivered. A new website, a redesign, new pages or new features need a separate quotation, even while a plan is active. Tell us what you need and we will quote it.",
+  },
+  {
+    question: "Does a plan renew automatically?",
+    answer:
+      "No. A plan is a single one-month purchase with no automatic renewal and nothing stored for future billing. A further month requires a new purchase, and your dashboard shows your activation and expiry dates.",
+  },
+  {
+    question: "Do unused change requests carry over?",
+    answer:
+      "No. Change requests expire with the month they belong to and are not carried forward, credited or refunded. If you expect to need more changes, the next plan up includes more requests for the same month.",
+  },
   {
     question: "Can I switch plans later?",
     answer:
-      "Yes. Plans are designed to scale with your requirements. Contact the team and we can review the best path for your current stage.",
+      "Yes. Each month is bought separately, so you can choose a different plan for your next month. A plan already paid for runs to the end of its period as purchased.",
   },
   {
-    question: "Is implementation included?",
+    question: "How do cancellations and refunds work?",
     answer:
-      "Implementation scope depends on the plan and project requirements. We confirm the scope and any one-time work before starting.",
-  },
-  {
-    question: "Do you offer custom enterprise solutions?",
-    answer:
-      "Yes. The Scale plan is intended for enterprise requirements, including custom integrations, dedicated support, and tailored workflows.",
-  },
-  {
-    question: "Can you work with our existing systems?",
-    answer:
-      "Yes. The services are structured around integrations, migrations, APIs, and incremental modernization of existing infrastructure.",
+      "Cancellation and refund conditions, duplicate and failed payments, and how to raise a complaint are set out in our Refund & Cancellation Policy, which is linked in the footer of every page and should be read before you pay.",
   },
 ] as const;
 
@@ -188,3 +217,34 @@ export const socialLinks: string[] = [
   process.env.TWITTER_URL,
   process.env.GITHUB_URL,
 ].filter((url): url is string => Boolean(url) && url !== "#");
+
+/**
+ * Published business identity.
+ *
+ * A payment-gateway reviewer looks for an operator name, a postal
+ * address and a support contact on the policy pages themselves, not
+ * only on the contact page. The first three fields are the details
+ * already published elsewhere on this site, so they are safe to
+ * restate.
+ *
+ * `legalName`, `entityType` and `gstin` are deliberately nullable
+ * and read only from the environment. A registered entity name or a
+ * tax registration number cannot be guessed, and publishing a wrong
+ * one is worse than publishing none: it contradicts the merchant
+ * profile the gateway is checking the website against. Each is
+ * rendered only once an operator supplies it.
+ */
+export const businessIdentity = {
+  tradingName: "Busiserve Infotech Solution",
+  shortName: "Busiserve",
+  address: "A1, Sector 59, Noida, Uttar Pradesh, India",
+  email: contactDefaults.email,
+  phone: contactDefaults.phone,
+  legalName: process.env.BUSINESS_LEGAL_NAME ?? null,
+  entityType: process.env.BUSINESS_ENTITY_TYPE ?? null,
+  gstin: process.env.BUSINESS_GSTIN ?? null,
+} as const;
+
+/** Phone number formatted for display, e.g. "+91 97944 24169". */
+export const displayPhone = (value: string) =>
+  value.replace(/^(\+\d{2})(\d{5})(\d{5})$/, "$1 $2 $3");

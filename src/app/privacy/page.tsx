@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
-import { pageMetadata } from "@/lib/seo";
+import Link from "next/link";
+
+import Footer from "@/components/Footer";
+import JsonLd from "@/components/JsonLd";
+import LegalIdentity from "@/components/LegalIdentity";
+import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
+import { businessIdentity, displayPhone } from "@/lib/site-data";
 
 export const metadata: Metadata = pageMetadata({
   title: "Privacy Policy",
@@ -10,9 +16,20 @@ export const metadata: Metadata = pageMetadata({
 
 export default function PrivacyPage() {
   return (
-    <main className="container-site prose-brand section-gap">
+    <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Privacy Policy", path: "/privacy" },
+        ])}
+      />
+
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="container-site prose-brand section-gap"
+      >
       <h1 className="text-4xl font-extrabold text-[#001b40]">Privacy Policy</h1>
-      <p className="mt-6"><strong>Effective date:</strong> October 1, 2026</p>
+      <p className="mt-6"><strong>Effective date:</strong> October 16, 2026</p>
       <p>
         Busiserve (&quot;Busiserve&quot;, &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) respects your privacy.
         This Privacy Policy explains how we collect, use, disclose, and protect
@@ -20,13 +37,17 @@ export default function PrivacyPage() {
         create an account, use the portal, or purchase a plan.
       </p>
 
+      <LegalIdentity role="the data fiduciary for the information described here" />
+
       <h2 className="mt-10 text-2xl font-bold text-[#001b40]">Information we collect</h2>
       <p>Depending on how you use the website, we may collect:</p>
       <ul>
         <li><strong>Contact and quote information:</strong> your name, work email address, subject, message, service interest, and information you choose to include about your project.</li>
         <li><strong>Account information:</strong> your name, email address, password credentials, email-verification status, and account or portal activity. Passwords are processed by our authentication provider and are not available to us in readable form.</li>
         <li><strong>Purchase information:</strong> selected plan, order number, payment status, amount, currency, and payment or verification identifiers. Payment card and banking details are handled by Razorpay and are not stored by Busiserve.</li>
-        <li><strong>Technical information:</strong> IP address, browser and device type, pages visited, approximate usage times, referral information, and error or security logs when these are made available by the hosting and security services we use.</li>
+        <li><strong>Technical information:</strong> browser and device type, pages visited, approximate usage times, referral information, and error or security logs when these are made available by the hosting and security services we use.</li>
+        <li><strong>Visit counting:</strong> to count unique visits we combine your IP address, your browser&apos;s user-agent string and the date into a one-way hash. Only that hash is stored; we do not keep the IP address or the user-agent string themselves, and the hash cannot be reversed to identify you.</li>
+        <li><strong>Security events:</strong> where a request is refused by our access controls — for example a payment confirmation whose signature does not match, repeated failed sign-ins, or automated scanning of our website — we record the event so we can investigate abuse. These records hold the requesting address only in masked form (such as <code>203.0.113.x</code>) together with a short one-way digest of it, not the full address. The full address may still appear in our hosting provider&apos;s own request logs, which that provider retains under its own terms.</li>
         <li><strong>Communications:</strong> correspondence, support requests, and responses to messages from us.</li>
       </ul>
 
@@ -76,12 +97,40 @@ export default function PrivacyPage() {
         personal information.
       </p>
 
-      <h2 className="mt-10 text-2xl font-bold text-[#001b40]">Payment services</h2>
+      <h2 className="mt-10 text-2xl font-bold text-[#001b40]">The providers we actually use</h2>
       <p>
-        Payments are initiated through Razorpay. Razorpay may collect and
-        process payment details under its own privacy policy and terms. We
-        receive transaction and verification details needed to confirm an order,
-        provide the relevant plan, prevent fraud, and maintain financial records.
+        We keep this list specific rather than general, so that you can
+        read each provider&apos;s own policy. Each one processes
+        information only for the function described:
+      </p>
+      <ul>
+        <li><strong>Google Firebase</strong> (Google LLC / Google Cloud) — account authentication, email verification and password reset, and the database that stores accounts, enquiries, orders and subscription records.</li>
+        <li><strong>Razorpay</strong> (Razorpay Software Private Limited) — payment processing. Card, UPI, netbanking and wallet details are entered in Razorpay&apos;s checkout and are handled by Razorpay under its own privacy policy and terms. Busiserve never receives or stores your card number, CVV, UPI PIN or banking credentials.</li>
+        <li><strong>Resend</strong> (Resend, Inc.) — sending transactional email such as order confirmations and invoices.</li>
+        <li><strong>Vercel</strong> (Vercel Inc.) — website and application hosting, including request and error logs generated in the normal course of serving the site.</li>
+      </ul>
+      <p>
+        These providers may process information outside your country,
+        including outside India. We rely on their contractual terms and
+        safeguards for such transfers. If we add or replace a provider
+        that handles personal information, we update this list.
+      </p>
+
+      <h2 className="mt-10 text-2xl font-bold text-[#001b40]">Payment information in detail</h2>
+      <p>
+        Payments are initiated through Razorpay. From a completed or
+        attempted payment we receive and retain the order reference,
+        plan name, amount, currency, payment and signature identifiers,
+        payment status, invoice number and the email address on the
+        account. We use these to confirm an order, activate the plan you
+        bought, issue your invoice, handle refund or chargeback
+        requests, detect fraudulent payment attempts, and meet
+        accounting and tax obligations. How a cancellation or refund is
+        handled is set out in our{" "}
+        <Link href="/refund-policy">
+          Refund &amp; Cancellation Policy
+        </Link>
+        .
       </p>
 
       <h2 className="mt-10 text-2xl font-bold text-[#001b40]">Data retention and security</h2>
@@ -123,11 +172,38 @@ export default function PrivacyPage() {
         means the updated policy applies to future use.
       </p>
 
-      <h2 className="mt-10 text-2xl font-bold text-[#001b40]">Contact us</h2>
+      <h2 className="mt-10 text-2xl font-bold text-[#001b40]">Contact us about privacy</h2>
       <p>
-        For privacy questions or requests, contact Busiserve through our Contact
-        page or email <a href="mailto:busiserveinfotechsolution@gmail.com">busiserveinfotechsolution@gmail.com</a>.
+        For privacy questions, data requests or a privacy complaint,
+        write to{" "}
+        <a href={`mailto:${businessIdentity.email}`}>
+          {businessIdentity.email}
+        </a>{" "}
+        with the subject line &quot;Privacy request&quot;, call{" "}
+        <a href={`tel:${businessIdentity.phone}`}>
+          {displayPhone(businessIdentity.phone)}
+        </a>
+        , or use our <Link href="/contact">contact page</Link>. Postal
+        address: {businessIdentity.tradingName},{" "}
+        {businessIdentity.address}.
       </p>
-    </main>
+      <p>
+        Requests sent to this address are handled by the person
+        responsible for privacy and grievances at Busiserve. We confirm
+        receipt and respond in writing. If you are not satisfied with
+        the outcome, you may escalate to the data-protection or consumer
+        authority with jurisdiction over you.
+      </p>
+      <p>
+        See also our <Link href="/terms">Terms of Service</Link> and{" "}
+        <Link href="/refund-policy">
+          Refund &amp; Cancellation Policy
+        </Link>
+        .
+      </p>
+      </main>
+
+      <Footer />
+    </>
   );
 }

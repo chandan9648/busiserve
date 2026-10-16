@@ -287,14 +287,36 @@ export async function userSubscriptions(
     .where("uid", "==", uid)
     .get();
 
+  /*
+   * The fields are listed rather than spread.
+   *
+   * Spreading the document sent every field it happened to carry to
+   * the browser, including `usageUpdatedBy` — the uid of the
+   * administrator who last recorded a change. The customer needs
+   * the count and the date, not the identity of the operator, and a
+   * field added to the document later should not reach the customer
+   * merely because nobody revisited this function.
+   */
   return snapshot.docs
-    .map(
-      (document) =>
-        ({
-          ...document.data(),
-          id: document.id,
-        }) as Subscription,
-    )
+    .map((document) => {
+      const data = document.data();
+
+      return {
+        id: document.id,
+        uid: String(data.uid || ""),
+        planId: data.planId,
+        planName: String(data.planName || ""),
+        amount: Number(data.amount || 0),
+        allowance: Number(data.allowance || 0),
+        used: Number(data.used || 0),
+        startsAt: Number(data.startsAt || 0),
+        expiresAt: Number(data.expiresAt || 0),
+        paymentId: String(data.paymentId || ""),
+        orderId: String(data.orderId || ""),
+        createdAt: Number(data.createdAt || 0),
+        usageUpdatedAt: Number(data.usageUpdatedAt) || null,
+      } as Subscription;
+    })
     .sort(
       (a, b) => b.startsAt - a.startsAt,
     );
@@ -555,6 +577,9 @@ export async function activatePayment(
         paymentId,
         orderId,
         createdAt: now,
+
+        // A new period starts with nothing recorded against it.
+        usageUpdatedAt: null,
       };
 
       transaction.create(

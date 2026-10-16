@@ -77,6 +77,37 @@ export default function PricingToggle() {
           Sign in to purchase a plan and track your subscription,
           expiry date and remaining changes.
         </p>
+
+        {/*
+          The policies have to be reachable before a purchase, not
+          only from the footer after one. Prices are quoted in USD,
+          which is stated here rather than left to the currency
+          symbol alone.
+        */}
+        <p className="mt-4 text-sm leading-6 text-[#434750]">
+          Prices are in US dollars. Please read the{" "}
+          <Link
+            href="/terms"
+            className="rounded font-semibold text-[#964900] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#964900]"
+          >
+            Terms of Service
+          </Link>
+          ,{" "}
+          <Link
+            href="/refund-policy"
+            className="rounded font-semibold text-[#964900] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#964900]"
+          >
+            Refund &amp; Cancellation Policy
+          </Link>{" "}
+          and{" "}
+          <Link
+            href="/privacy"
+            className="rounded font-semibold text-[#964900] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#964900]"
+          >
+            Privacy Policy
+          </Link>{" "}
+          before you buy.
+        </p>
       </div>
 
       <div className="mt-12 grid items-stretch gap-7 lg:grid-cols-3">

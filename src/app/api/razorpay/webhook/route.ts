@@ -77,11 +77,36 @@ export async function POST(request: Request) {
     }
 
     const isSuccessful = ["payment.captured", "order.paid"].includes(event.event);
+
     const update: Record<string, unknown> = {
-      status: isSuccessful ? "paid" : event.event === "payment.failed" ? "failed" : "updated",
-      payment_status: isSuccessful ? "paid" : event.event === "payment.failed" ? "failed" : "updated",
       updated_at: new Date(),
     };
+
+    /*
+     * A paid order is never downgraded by a later event.
+     *
+     * Webhooks are retried and are not guaranteed to arrive in
+     * order, so `payment.authorized` can land after
+     * `payment.captured`. The previous version wrote the status for
+     * whichever event arrived last, which turned a paid order into
+     * "updated" — a customer who had paid, and whose verification
+     * had already succeeded, would show as unpaid in their own
+     * records. Replaying the same event is now also a no-op rather
+     * than a rewrite.
+     */
+    const alreadyPaid =
+      orderDocument.get("status") === "paid" ||
+      orderDocument.get("payment_status") === "paid";
+
+    if (isSuccessful) {
+      update.status = "paid";
+      update.payment_status = "paid";
+    } else if (!alreadyPaid) {
+      const state = event.event === "payment.failed" ? "failed" : "updated";
+
+      update.status = state;
+      update.payment_status = state;
+    }
 
     if (payment?.id) update.razorpay_payment_id = payment.id;
     if (payment?.error_description) update.payment_error = payment.error_description;

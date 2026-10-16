@@ -221,6 +221,66 @@ export default function Portal({
     setMe(result);
   }, []);
 
+  const accountLoaded = me !== null;
+
+  /*
+   * Keep the account in step with the server while the page is open.
+   *
+   * An administrator records completed changes from the admin
+   * dashboard, which writes `used` on the subscription. Until this
+   * existed the customer's own page kept showing the figure it had
+   * fetched at sign-in, so a change recorded minutes ago appeared
+   * only if the customer happened to press "Refresh account" or
+   * reload the page — and a customer looking at a stale allowance
+   * has no way to know it is stale.
+   *
+   * The poll is paused while the tab is hidden, because a background
+   * tab has nobody reading it, and runs once immediately when the
+   * tab becomes visible again: returning to the tab is exactly when
+   * the figure most needs to be current. A failed poll is ignored
+   * rather than surfaced — it is a background refresh, and the next
+   * one will either succeed or the user will act and see the error
+   * then.
+   */
+  useEffect(() => {
+    if (!accountLoaded) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const refreshQuietly = () => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      portalApi<MeResponse>("me")
+        .then((result) => {
+          if (!cancelled) {
+            setMe(result);
+          }
+        })
+        .catch(() => {
+          /* Background refresh: leave the figures as they are. */
+        });
+    };
+
+    const interval = window.setInterval(refreshQuietly, 60_000);
+
+    document.addEventListener("visibilitychange", refreshQuietly);
+    window.addEventListener("focus", refreshQuietly);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshQuietly);
+      window.removeEventListener("focus", refreshQuietly);
+    };
+    // Only whether an account is loaded, never the account itself:
+    // depending on `me` would tear down and rebuild the poll on
+    // every poll that replaced it.
+  }, [accountLoaded]);
+
   useEffect(() => {
     let cancelled = false;
     let authVersion = 0;
@@ -521,7 +581,6 @@ function UserDashboard({
   const [selectedPlanId, setSelectedPlanId] = useState<PlanId | null>(null);
   const detailsRef = useRef<HTMLElement | null>(null);
   const checkoutInProgress = useRef(false);
-  const selectedPlan = selectedPlanId ? PLANS[selectedPlanId] : null;
 
   useEffect(() => {
     if (selectedPlanId) {
@@ -535,6 +594,41 @@ function UserDashboard({
       item.startsAt <= me.serverNow &&
       item.expiresAt > me.serverNow,
   );
+
+  /*
+   * Plans the customer is already holding.
+   *
+   * A period counts as held until it expires, which covers both the
+   * running month and a month already paid for that starts later.
+   * Offering "Buy Starter" to somebody whose Starter month still has
+   * three weeks to run reads as though the first purchase did not
+   * register, so the plan drops out of the grid and comes back on
+   * its own when the period ends.
+   */
+  const heldPlanIds = new Set(
+    me.subscriptions
+      .filter((item) => item.expiresAt > me.serverNow)
+      .map((item) => item.planId),
+  );
+
+  const availablePlans = Object.values(PLANS).filter(
+    (plan) => !heldPlanIds.has(plan.id),
+  );
+
+  /*
+   * A plan selected before it became unavailable — the customer had
+   * the confirmation panel open when the purchase completed, or the
+   * background refresh brought in a period bought on another device.
+   *
+   * The panel is resolved from the held plans rather than from the
+   * selected id alone, so it simply stops rendering. Clearing the id
+   * in an effect instead would mean a render with the stale panel
+   * still on screen, and a second render to remove it.
+   */
+  const selectedPlan =
+    selectedPlanId && !heldPlanIds.has(selectedPlanId)
+      ? PLANS[selectedPlanId]
+      : null;
 
   const refreshAfterExpiry = useCallback(() => {
     void reload().catch((error: unknown) => {
@@ -756,15 +850,9 @@ function UserDashboard({
                 {active.planName}
               </h2>
 
-              <p className="mt-3">
-                {Math.max(
-                  0,
-                  active.allowance - active.used,
-                )}{" "}
-                of {active.allowance} changes remaining
-              </p>
+              <ChangeAllowance subscription={active} />
 
-              <p className="mt-3 text-sm text-slate-200">
+              <p className="mt-5 text-sm text-slate-200">
                 Started: {formatDate(active.startsAt)}
               </p>
 
@@ -800,14 +888,31 @@ function UserDashboard({
         </h2>
 
         <p className="mt-2 text-sm leading-7 text-slate-600">
-          Each payment buys one calendar month. An early
-          renewal starts after your existing paid periods
-          finish. Change allowances reset for each period,
-          and unused changes do not roll over.
+          Each payment buys one calendar month. Change
+          allowances reset for each period, and unused changes
+          do not roll over.
+          {heldPlanIds.size > 0 && (
+            <>
+              {" "}
+              A plan you have already paid for is not offered
+              again until that period ends — it reappears here
+              once it expires.
+            </>
+          )}
         </p>
 
+        {availablePlans.length === 0 && (
+          <p className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-700">
+            You have already paid for every plan period
+            available. Your current and scheduled periods, with
+            their dates, are listed in your payment history
+            below. Each plan can be bought again once its period
+            ends.
+          </p>
+        )}
+
         <div className="mt-6 grid gap-5 lg:grid-cols-3">
-          {Object.values(PLANS).map((plan) => (
+          {availablePlans.map((plan) => (
             <article
               key={plan.id}
               className="rounded-2xl border bg-white p-6"
@@ -911,6 +1016,25 @@ function UserDashboard({
               onClick={() => setSelectedPlanId(null)}>Cancel</button>
           </div>
           <p className="mt-3 text-xs text-slate-500">Payment opens securely with Razorpay.</p>
+          {/*
+            The purchase terms belong on the confirmation step, where
+            the amount is agreed, rather than only in the footer.
+          */}
+          <p className="mt-2 text-xs leading-6 text-slate-500">
+            By continuing you agree to our{" "}
+            <a href="/terms" className="font-semibold text-orange-700 underline underline-offset-4">
+              Terms of Service
+            </a>
+            {" "}and{" "}
+            <a href="/refund-policy" className="font-semibold text-orange-700 underline underline-offset-4">
+              Refund &amp; Cancellation Policy
+            </a>
+            . Your information is handled as described in our{" "}
+            <a href="/privacy" className="font-semibold text-orange-700 underline underline-offset-4">
+              Privacy Policy
+            </a>
+            .
+          </p>
         </section>
       )}
 
@@ -934,6 +1058,10 @@ function UserDashboard({
                     "Starts",
                     "Expires",
                     "Status",
+                    // Each period carries its own allowance, so the
+                    // history is where a customer checks what an
+                    // earlier month was actually used for.
+                    "Changes used",
                     "Payment ID",
                   ].map((label) => (
                     <th
@@ -974,6 +1102,14 @@ function UserDashboard({
                         item,
                         me.serverNow,
                       )}
+                    </td>
+
+                    <td className="p-3">
+                      {Math.min(
+                        Math.max(0, item.used),
+                        item.allowance,
+                      )}{" "}
+                      / {item.allowance}
                     </td>
 
                     <td className="p-3 font-mono text-xs">
@@ -1689,6 +1825,104 @@ function AdminDashboard({
 }
 
 /* -------------------------------------------------------------------------- */
+/* Change allowance, as the customer sees it                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Used, remaining and the total, for the customer's own dashboard.
+ *
+ * The figure that matters to a customer is how many change requests
+ * are left, so that is the large number. Used and total are stated
+ * next to it rather than left to be worked out, and the date of the
+ * last update is shown when there is one: a number that drops without
+ * explanation reads like an error, while a dated one reads like a
+ * record.
+ *
+ * `used` is clamped into range for display. The API already refuses a
+ * value above the allowance, but a figure carried over from an
+ * earlier plan change should still render as a full bar rather than
+ * as a negative remainder.
+ */
+function ChangeAllowance({
+  subscription,
+}: {
+  subscription: Subscription;
+}) {
+  const allowance = Math.max(0, subscription.allowance);
+
+  const used = Math.min(
+    Math.max(0, subscription.used),
+    allowance,
+  );
+
+  const remaining = allowance - used;
+
+  const percentUsed =
+    allowance === 0
+      ? 0
+      : Math.round((used / allowance) * 100);
+
+  const exhausted = allowance > 0 && remaining === 0;
+
+  return (
+    <div className="mt-4">
+      <p className="flex flex-wrap items-baseline gap-x-2">
+        <span className="text-4xl font-extrabold">
+          {remaining}
+        </span>
+
+        <span className="text-sm text-slate-200">
+          of {allowance} change{allowance === 1 ? "" : "s"} remaining
+        </span>
+      </p>
+
+      <div
+        role="progressbar"
+        aria-valuenow={used}
+        aria-valuemin={0}
+        aria-valuemax={allowance}
+        aria-label={`${used} of ${allowance} changes used`}
+        className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/15"
+      >
+        <div
+          className={`h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none ${
+            exhausted ? "bg-rose-400" : "bg-orange-400"
+          }`}
+          style={{ width: `${percentUsed}%` }}
+        />
+      </div>
+
+      <p className="mt-3 text-sm text-slate-200">
+        <span className="font-semibold text-white">
+          {used} used
+        </span>{" "}
+        · {remaining} left of {allowance} included this month
+      </p>
+
+      {exhausted && (
+        <p className="mt-3 rounded-xl bg-white/10 p-3 text-sm leading-6 text-slate-100">
+          You have used all the changes included in this month.
+          Buy a plan below for another month, or ask us for a
+          quote for larger work.
+        </p>
+      )}
+
+      {subscription.usageUpdatedAt ? (
+        <p className="mt-3 text-xs text-slate-300">
+          Usage last updated by Busiserve:{" "}
+          {formatDate(subscription.usageUpdatedAt)}
+        </p>
+      ) : (
+        <p className="mt-3 text-xs text-slate-300">
+          No changes recorded yet. This updates when we complete a
+          change request.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /* Admin change usage editor                                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -1752,6 +1986,18 @@ function UsageEditor({
           {busy ? "Saving…" : "Save"}
         </button>
       </div>
+
+      {/*
+        What the customer will see for this figure, so that the
+        number being typed here is read the same way on both sides.
+      */}
+      <p className="mt-2 text-xs text-white/40">
+        {Math.max(0, subscription.allowance - subscription.used)} left
+        for the customer
+        {subscription.usageUpdatedAt
+          ? ` · updated ${formatDate(subscription.usageUpdatedAt)}`
+          : " · never updated"}
+      </p>
 
       {message && (
         <p

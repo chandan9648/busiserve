@@ -130,6 +130,7 @@ export async function GET(request: Request) {
         paymentId: String(data.paymentId || ""),
         orderId: String(data.orderId || ""),
         createdAt: parseTimestamp(data.createdAt) || now,
+        usageUpdatedAt: parseTimestamp(data.usageUpdatedAt) || null,
       };
     });
 

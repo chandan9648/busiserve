@@ -21,6 +21,17 @@ export type Subscription = {
   paymentId: string;
   orderId: string;
   createdAt: number;
+
+  /**
+   * When an administrator last changed `used`, or null if never.
+   *
+   * The customer's dashboard shows this so that a change to their
+   * remaining allowance is dated rather than appearing from nowhere.
+   * The administrator's own uid is deliberately not part of this
+   * type: it is stored on the document, but it is not the
+   * customer's business who inside Busiserve recorded the change.
+   */
+  usageUpdatedAt: number | null;
 };
 
 export type MeResponse = {

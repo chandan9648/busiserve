@@ -9,7 +9,7 @@ import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Pricing Plans",
   description:
-    "Transparent pricing for website, app, CMS, CRM and automation projects, with monthly and yearly plans from Busiserve Infotech Solution.",
+    "One-month website update plans from Busiserve Infotech Solution: Starter, Growth and Scale, each covering a set number of small changes to an existing Busiserve-built website. New projects are quoted separately.",
   path: "/pricing",
 });
 
@@ -21,12 +21,14 @@ export default function PricingPage() {
       <main>
         <section className="container-site py-16 text-center md:py-20">
           <h1 className="text-4xl font-extrabold tracking-tight text-[#001b40] md:text-5xl">
-            Transparent Pricing for Growth
+            Website Update Plans
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-7 text-[#434750]">
-            Choose the perfect plan to scale your operations. No hidden fees,
-            just reliable service tailored to your enterprise needs.
+            One-month plans for small changes to a website Busiserve has
+            already built for you. Every plan shows its price, its duration
+            and exactly how many change requests it includes. New websites
+            and larger development work are quoted separately.
           </p>
 
           <PricingToggle />

@@ -5,6 +5,7 @@ import {
   serviceCatalogue,
   servicePath,
 } from "@/lib/services-catalogue";
+import { businessIdentity, displayPhone } from "@/lib/site-data";
 
 /**
  * The services listed in the footer.
@@ -47,6 +48,38 @@ export default function Footer() {
             professional engineering.
           </p>
 
+          {/*
+            Operator name, address and support contact.
+
+            These belong in the footer rather than only on the
+            contact page: a visitor deciding whether to pay, and a
+            payment provider reviewing the site, both look for them
+            on whichever page they happen to be on.
+          */}
+          <address className="mt-5 not-italic text-sm leading-6 text-[#d7e3ff]">
+            <span className="block font-semibold text-white">
+              {businessIdentity.tradingName}
+            </span>
+
+            <span className="mt-1 block max-w-xs">
+              {businessIdentity.address}
+            </span>
+
+            <a
+              href={`mailto:${businessIdentity.email}`}
+              className="mt-2 block break-all transition-colors hover:text-white"
+            >
+              {businessIdentity.email}
+            </a>
+
+            <a
+              href={`tel:${businessIdentity.phone}`}
+              className="block transition-colors hover:text-white"
+            >
+              {displayPhone(businessIdentity.phone)}
+            </a>
+          </address>
+
           <p className="mt-5 text-sm text-[#aac7ff]">
             © {new Date().getFullYear()} Busiserve. All rights reserved.
           </p>
@@ -64,6 +97,20 @@ export default function Footer() {
               className="transition-colors hover:text-white"
             >
               About Us
+            </Link>
+
+            <Link
+              href="/pricing"
+              className="transition-colors hover:text-white"
+            >
+              Pricing
+            </Link>
+
+            <Link
+              href="/contact"
+              className="transition-colors hover:text-white"
+            >
+              Contact Us
             </Link>
 
             <Link
@@ -143,14 +190,17 @@ export default function Footer() {
               Terms of Service
             </Link>
 
-            <a
-              href={process.env.LINKEDIN_URL ?? "#"}
-              target="_blank"
-              rel="noopener noreferrer"
+            {/*
+              A purchaser must be able to reach the refund rules from
+              any page, and the LinkedIn link that used to sit here
+              was already in the Company column above.
+            */}
+            <Link
+              href="/refund-policy"
               className="transition-colors hover:text-white"
             >
-              LinkedIn
-            </a>
+              Refund &amp; Cancellation Policy
+            </Link>
 
             {/* <a
               href={process.env.TWITTER_URL ?? "#"}

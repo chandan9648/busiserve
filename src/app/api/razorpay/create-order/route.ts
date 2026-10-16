@@ -2,7 +2,25 @@ import { NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
 import { razorpay } from "@/lib/razorpay";
 import { generateOrderNumber } from "@/lib/order";
-import { pricingPlans } from "@/lib/site-data";
+import { PLANS } from "@/lib/portal/plans";
+
+/*
+ * The plans are resolved from PLANS, the same record the pricing
+ * page and the dashboard price from.
+ *
+ * This route used to price from `pricingPlans` in site-data, a
+ * second and older list. The two had drifted: a plan named "Scale"
+ * existed in both, advertised at one price on /pricing and charged
+ * at another here. A website that can charge an amount it does not
+ * advertise is a transparency problem before it is a bug, so there
+ * is now one source of truth for what a plan costs.
+ */
+const findPlan = (name: string) =>
+  Object.values(PLANS).find(
+    (plan) =>
+      plan.name.toLowerCase() === name.toLowerCase() ||
+      plan.id === name.toLowerCase(),
+  );
 
 export async function POST(request: Request) {
   try {
@@ -29,7 +47,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const plan = pricingPlans.find((item) => item.name === planName);
+    const plan = findPlan(planName);
 
     if (!plan) {
       return NextResponse.json(
@@ -38,7 +56,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const amount = Number(plan.monthly);
+    // PLANS holds the price in the currency's smallest unit (cents).
+    // The gateway is charged that figure directly; the order record
+    // and the invoice keep the major-unit amount they already used.
+    const amount = plan.amount / 100;
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json(
@@ -50,7 +71,7 @@ export async function POST(request: Request) {
     const orderNumber = generateOrderNumber();
 
     const razorpayOrder = await razorpay.orders.create({
-      amount: Math.round(amount * 100),
+      amount: plan.amount,
       currency: "USD",
       receipt: orderNumber,
       notes: {
@@ -63,7 +84,7 @@ export async function POST(request: Request) {
     const orderDocument = await getAdminDb().collection("orders").add({
       user_id: user.uid,
       order_number: orderNumber,
-      plan_id: plan.name,
+      plan_id: plan.id,
       plan_name: plan.name,
       amount,
       currency: "USD",
