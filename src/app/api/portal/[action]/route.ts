@@ -252,7 +252,7 @@ async function handle(request: Request, context: Context) {
         currency: string;
       }>("orders", "POST", {
         amount: plan.amount,
-        currency: "INR",
+        currency: "USD",
         receipt: randomUUID(),
         notes: {
           portal: "busiserve",
@@ -274,7 +274,7 @@ async function handle(request: Request, context: Context) {
       return json({
         orderId: order.id,
         amount: plan.amount,
-        currency: "INR",
+        currency: "USD",
         key: requiredEnv("RAZORPAY_KEY_ID"),
         planName: plan.name,
       });

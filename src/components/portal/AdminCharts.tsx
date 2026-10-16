@@ -96,9 +96,9 @@ function normalizePlanDistribution(
 }
 
 function formatCurrency(value: unknown): string {
-  return new Intl.NumberFormat("en-IN", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "INR",
+    currency: "USD",
     maximumFractionDigits: 0,
   }).format(safeNumber(value));
 }
@@ -1160,7 +1160,7 @@ export default function AdminCharts({
               ),
           )}
           color="#6366f1"
-          prefix="₹"
+          prefix="$"
         />
 
         <LineChart

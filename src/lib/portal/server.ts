@@ -446,7 +446,7 @@ export async function activatePayment(
 
   if (
     payment.order_id !== orderId ||
-    payment.currency !== "INR" ||
+    payment.currency !== "USD" ||
     payment.status !== "captured" ||
     payment.amount_refunded > 0
   ) {

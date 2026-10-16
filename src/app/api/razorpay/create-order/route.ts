@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(amount * 100),
-      currency: "INR",
+      currency: "USD",
       receipt: orderNumber,
       notes: {
         order_number: orderNumber,
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       plan_id: plan.name,
       plan_name: plan.name,
       amount,
-      currency: "INR",
+      currency: "USD",
       razorpay_order_id: razorpayOrder.id,
       status: "created",
       customer_email: user.email ?? null,
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         orderNumber,
         razorpayOrderId: razorpayOrder.id,
         amount,
-        currency: "INR",
+        currency: "USD",
         planName: plan.name,
       },
       razorpayKeyId:
