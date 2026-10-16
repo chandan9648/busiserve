@@ -21,6 +21,12 @@ export const metadata: Metadata = pageMetadata({
   description:
     "Talk to Busiserve Infotech Solution in Noida about your website, app, business software or automation project. Get a free consultation.",
   path: "/contact",
+  keywords: [
+    "contact Busiserve",
+    "hire web developers Noida",
+    "software development enquiry",
+    "free project consultation",
+  ],
 });
 
 const focus =

@@ -16,6 +16,7 @@ import { SITE_NAME } from "@/lib/site-url";
 import {
   ORGANIZATION_ID,
   WEBSITE_ID,
+  baseKeywords,
   organizationContact,
   postalAddress,
   siteUrl,
@@ -49,6 +50,18 @@ export const metadata: Metadata = {
   },
 
   description,
+
+  // The homepage and any route that does not call pageMetadata().
+  // See the note on `pageMetadata` for what this tag is and is not
+  // worth: it is kept accurate rather than exhaustive.
+  keywords: [
+    "web development company",
+    "app development company",
+    "CRM development",
+    "ERP development",
+    "business automation",
+    ...baseKeywords,
+  ],
 
   // Google picks the name it shows above a result from these signals
   // rather than from the <title> alone, so the brand name is repeated

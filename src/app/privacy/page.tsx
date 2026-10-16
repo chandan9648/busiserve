@@ -12,6 +12,7 @@ export const metadata: Metadata = pageMetadata({
   description:
     "How Busiserve Infotech Solution collects, uses, shares and protects personal information across our website, client portal and payment flow.",
   path: "/privacy",
+  keywords: ["privacy policy", "data protection"],
 });
 
 export default function PrivacyPage() {

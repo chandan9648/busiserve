@@ -184,7 +184,7 @@ export default function HomePage() {
                   width={640}
                   height={560}
                   priority
-                  unoptimized
+                  sizes="(max-width: 1024px) 100vw, 640px"
                   className="bs-hero-image"
                 />
               </div>

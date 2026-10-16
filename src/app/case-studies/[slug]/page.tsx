@@ -50,6 +50,7 @@ export async function generateMetadata({
     title: study.metaTitle,
     description: study.metaDescription,
     path: caseStudyPath(study.slug),
+    keywords: [study.title, `${study.title} case study`],
   });
 }
 

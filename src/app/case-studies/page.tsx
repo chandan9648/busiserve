@@ -11,6 +11,11 @@ export const metadata: Metadata = pageMetadata({
   description:
     "Client projects delivered by Busiserve Infotech Solution across web platforms, mobile apps, business software and workflow automation.",
   path: "/case-studies",
+  keywords: [
+    "software development case studies",
+    "web development portfolio",
+    "client projects",
+  ],
 });
 
 export default function CaseStudiesPage() {

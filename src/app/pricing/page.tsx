@@ -7,10 +7,15 @@ import { faqs } from "@/lib/site-data";
 import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Pricing Plans",
+  title: "Website Update Plans & Pricing",
   description:
-    "One-month website update plans from Busiserve Infotech Solution: Starter, Growth and Scale, each covering a set number of small changes to an existing Busiserve-built website. New projects are quoted separately.",
+    "One-month website update plans from Busiserve: Starter, Growth and Scale, each covering a set number of small changes to a site we have already built for you.",
   path: "/pricing",
+  keywords: [
+    "website maintenance plans",
+    "website update subscription",
+    "website support pricing",
+  ],
 });
 
 export default function PricingPage() {

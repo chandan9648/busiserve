@@ -63,6 +63,22 @@ export async function generateMetadata({
     title: service.metaTitle,
     description: service.metaDescription,
     path: servicePath(service.slug),
+
+    /*
+     * Derived from the service itself rather than written out on
+     * each of the twelve records. A hand-written list per service
+     * would be twelve more places for the wording to drift from the
+     * page it describes, for a tag no major engine ranks on.
+     *
+     * The location variant is included because "<service> in Noida"
+     * is a real query for this business, and it is the one term here
+     * that the page body does not always carry itself.
+     */
+    keywords: [
+      service.metaTitle,
+      `${service.metaTitle} in Noida`,
+      `${service.metaTitle} company India`,
+    ],
   });
 }
 

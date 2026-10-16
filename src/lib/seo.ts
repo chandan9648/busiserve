@@ -14,18 +14,49 @@ export const siteUrl = getSiteUrl();
  * duplicates of the homepage and should not be indexed separately —
  * the opposite of what is wanted.
  */
+/**
+ * Terms every page of this site is entitled to claim.
+ *
+ * Merged into each page's own keywords rather than repeated by hand,
+ * so the brand and the location are never spelled two ways.
+ */
+export const baseKeywords = [
+  "Busiserve",
+  "Busiserve Infotech Solution",
+  "software development company",
+  "IT company in Noida",
+  "web development company Noida",
+] as const;
+
 export function pageMetadata({
   title,
   description,
   path,
+  keywords = [],
 }: {
   title: string;
   description: string;
   path: string;
+  /**
+   * Page-specific terms, placed before the shared ones.
+   *
+   * Worth being plain about: Google has not used the keywords meta
+   * tag as a ranking signal since 2009, and Bing treats a stuffed one
+   * as a spam signal rather than a hint. These are kept short and
+   * truthful because some smaller crawlers, site-search tools and
+   * internal indexers still read them, and because an inaccurate one
+   * is the only way this tag can actually cost anything.
+   */
+  keywords?: readonly string[];
 }): Metadata {
   return {
     title,
     description,
+
+    // De-duplicated, because a term repeated across both lists is
+    // exactly the pattern that reads as stuffing.
+    keywords: Array.from(new Set([...keywords, ...baseKeywords])),
+
     alternates: { canonical: path },
     openGraph: {
       type: "website",

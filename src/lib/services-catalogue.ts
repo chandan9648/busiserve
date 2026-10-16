@@ -469,7 +469,7 @@ const services: ServiceDetail[] = [
     enquiryValue: "Web Development",
     metaTitle: "Web Development Services",
     metaDescription:
-      "Custom website and web application development using React, Next.js, Node.js, Laravel and WordPress, with four project tiers from Busiserve Infotech Solution, Noida.",
+      "Custom website and web application development using React, Next.js, Node.js, Laravel and WordPress, across four project tiers. Busiserve, Noida.",
     related: ["wordpress-development", "shopify-development", "ui-ux-design"],
   },
 
@@ -600,7 +600,7 @@ const services: ServiceDetail[] = [
     enquiryValue: "WordPress Website Development",
     metaTitle: "WordPress Website Development",
     metaDescription:
-      "WordPress website development in Noida: theme customisation, content management, WooCommerce, SEO setup, performance and security hardening, across four project tiers.",
+      "WordPress website development in Noida: theme customisation, content management, WooCommerce, SEO setup, performance and security hardening.",
     related: ["web-development", "shopify-development", "cms-development"],
   },
 
@@ -851,7 +851,7 @@ const services: ServiceDetail[] = [
     enquiryValue: "Shopify Store Development",
     metaTitle: "Shopify Store Development",
     metaDescription:
-      "Shopify store setup and storefront design: products and variants, checkout, payment gateways, shipping, SEO and app integrations, from Busiserve Infotech Solution.",
+      "Shopify store setup and storefront design: products and variants, checkout, payment gateways, shipping, SEO and app integrations. Busiserve, Noida.",
     related: ["wordpress-development", "web-development", "ui-ux-design"],
   },
 
@@ -970,7 +970,7 @@ const services: ServiceDetail[] = [
     enquiryValue: "Mobile App Development",
     metaTitle: "Mobile App Development",
     metaDescription:
-      "Android and iOS app development with Flutter and React Native: authentication, backend integration and push notifications, from Busiserve Infotech Solution, Noida.",
+      "Android and iOS app development with Flutter and React Native: authentication, backend integration and push notifications. Busiserve, Noida.",
     related: ["web-development", "crm-development", "ui-ux-design"],
   },
 
@@ -1196,7 +1196,7 @@ const services: ServiceDetail[] = [
       "Availability of brand assets and existing material",
     ],
     enquiryValue: "UI/UX and Graphic Design",
-    metaTitle: "UI/UX and Graphic Design Services",
+    metaTitle: "UI/UX and Graphic Design",
     metaDescription:
       "User research, wireframes, screen design, design systems, clickable prototypes and motion design for web and mobile products, from Busiserve Infotech Solution.",
     related: ["web-development", "app-development", "game-design"],
@@ -1555,7 +1555,7 @@ const services: ServiceDetail[] = [
     enquiryValue: "ERP Development",
     metaTitle: "ERP Development Services",
     metaDescription:
-      "Custom ERP development with React, Next.js, Node.js and Laravel: inventory, sales, purchasing, accounts, approvals, reporting and optional HR and multi-branch modules.",
+      "Custom ERP development: inventory, sales, purchasing, accounts, approvals, reporting, and optional HR and multi-branch modules. Busiserve, Noida.",
     related: ["crm-development", "api-development", "app-development"],
   },
 
@@ -1662,7 +1662,7 @@ const services: ServiceDetail[] = [
       "Access to the systems being connected",
     ],
     enquiryValue: "API Development",
-    metaTitle: "API Development and Integration",
+    metaTitle: "API Development & Integration",
     metaDescription:
       "Custom API development and third-party integration with Node.js and Laravel: REST endpoints, authentication, webhooks and developer documentation.",
     related: ["web-development", "crm-development", "automation-n8n"],

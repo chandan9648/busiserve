@@ -81,6 +81,34 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   serverExternalPackages: ["firebase-admin"],
 
+  /**
+   * Image optimisation.
+   *
+   * The hero images are served from a Google CDN and were rendered
+   * with `unoptimized`, which bypasses the optimiser entirely: the
+   * browser downloaded the full-size original as JPEG or PNG, on a
+   * phone as well as on a desktop. Those heroes carry `priority` and
+   * are the largest element on their pages, so they are what Largest
+   * Contentful Paint is measured against — and LCP is one of the
+   * Core Web Vitals Google ranks on.
+   *
+   * Allowing the host here lets the optimiser resize per breakpoint
+   * and serve AVIF or WebP instead, which is where most of the
+   * saving is. Only this one host is allowed: a wildcard would turn
+   * the optimiser into an open image proxy for any URL an attacker
+   * could get into a page.
+   */
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        pathname: "/aida-public/**",
+      },
+    ],
+    formats: ["image/avif", "image/webp"],
+  },
+
   experimental: {
     // "Collecting page data" otherwise spawns one worker per core. On an
     // eleven-core machine that is eleven Node processes at once, which

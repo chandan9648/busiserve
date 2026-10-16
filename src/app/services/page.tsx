@@ -19,8 +19,15 @@ import { breadcrumbSchema, pageMetadata, serviceCatalogSchema } from "@/lib/seo"
 export const metadata: Metadata = pageMetadata({
   title: "Software Development Services",
   description:
-    "Website, WordPress, Shopify and app development, UI/UX design, CMS, CRM, ERP, API integration and n8n automation services from Busiserve Infotech Solution, Noida.",
+    "Website, WordPress, Shopify and app development, UI/UX design, CMS, CRM, ERP, API integration and n8n automation, from Busiserve in Noida.",
   path: "/services",
+  keywords: [
+    "software development services",
+    "website development services",
+    "mobile app development services",
+    "CRM and ERP development",
+    "API integration services",
+  ],
 });
 
 const focus =
@@ -119,7 +126,7 @@ export default function ServicesPage() {
                 width={640}
                 height={460}
                 priority
-                unoptimized
+                sizes="(max-width: 1024px) 100vw, 640px"
                 className="aspect-[4/3] w-full object-cover"
               />
 

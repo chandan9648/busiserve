@@ -12,6 +12,7 @@ export const metadata: Metadata = pageMetadata({
   description:
     "The terms governing use of the Busiserve Infotech Solution website, client portal, quote process and related development services.",
   path: "/terms",
+  keywords: ["terms of service", "terms and conditions"],
 });
 
 export default function TermsPage() {

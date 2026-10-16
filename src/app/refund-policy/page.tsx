@@ -10,8 +10,9 @@ import { businessIdentity, displayPhone } from "@/lib/site-data";
 export const metadata: Metadata = pageMetadata({
   title: "Refund & Cancellation Policy",
   description:
-    "How to cancel an order or website update subscription with Busiserve Infotech Solution, when a refund applies, how duplicate and failed payments are handled, and how to raise a complaint.",
+    "How to cancel an order or website update subscription with Busiserve, when a refund applies, how duplicate and failed payments are handled, and how to complain.",
   path: "/refund-policy",
+  keywords: ["refund policy", "cancellation policy"],
 });
 
 const heading = "mt-10 text-2xl font-bold text-[#001b40]";

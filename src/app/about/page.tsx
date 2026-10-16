@@ -20,6 +20,11 @@ export const metadata: Metadata = pageMetadata({
   description:
     "Meet the Busiserve Infotech Solution team in Noida and how we build websites, apps, business software and automation for startups and enterprises.",
   path: "/about",
+  keywords: [
+    "about Busiserve",
+    "software development team Noida",
+    "IT services company Uttar Pradesh",
+  ],
 });
 
 const principles = [
@@ -114,7 +119,7 @@ export default function AboutPage() {
                 width={640}
                 height={560}
                 priority
-                unoptimized
+                sizes="(max-width: 1024px) 100vw, 640px"
                 className="aspect-[8/7] w-full object-cover"
               />
 

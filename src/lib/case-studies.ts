@@ -54,7 +54,7 @@ const studies: CaseStudy[] = [
       "Re-architected a legacy financial application for a global bank, resulting in a 40% increase in user retention and a significant reduction in transaction latency.",
     image: prototypeImages.case1,
 
-    metaTitle: "Fintech App Revolution Case Study",
+    metaTitle: "Fintech App Rebuild: Case Study",
     metaDescription:
       "How Busiserve re-architected a bank's legacy financial application, cut transaction latency and lifted user retention by 40%.",
     summary:
@@ -245,7 +245,7 @@ const studies: CaseStudy[] = [
       "Successfully migrated a multinational corporation's complex content ecosystem to a modern headless CMS, improving editorial workflows by 60%.",
     image: prototypeImages.case3,
 
-    metaTitle: "Enterprise CMS Migration Case Study",
+    metaTitle: "Enterprise CMS Migration",
     metaDescription:
       "How Busiserve moved a multinational's content ecosystem to a headless CMS, cutting publishing time and unifying content across regions.",
     summary:
