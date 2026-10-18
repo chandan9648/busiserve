@@ -48,7 +48,7 @@ const routes: {
   })),
 
   { path: "/contact", priority: 0.7, changeFrequency: "yearly" },
-  { path: "/about", priority: 0.6, changeFrequency: "yearly" },
+  { path: "/about", priority: 0.6, changeFrequency: "monthly" },
   { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },
   { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
   { path: "/refund-policy", priority: 0.2, changeFrequency: "yearly" },

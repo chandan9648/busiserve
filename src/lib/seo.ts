@@ -251,3 +251,37 @@ export function contactPageSchema() {
     },
   };
 }
+
+/**
+ * AboutPage, naming the real team against the organisation record.
+ *
+ * The team cards are plain text in the markup, so a crawler has to
+ * infer who these people are from the layout. Restating them here as
+ * Person records — founders under `founder`, the rest under
+ * `employee` — gives Google the names and roles explicitly, which is
+ * what a stale snippet needs in order to be rewritten.
+ */
+export function aboutPageSchema(
+  team: readonly { name: string; role: string; image: string }[]
+) {
+  const person = (member: { name: string; role: string; image: string }) => ({
+    "@type": "Person",
+    name: member.name,
+    jobTitle: member.role,
+    image: absoluteUrl(member.image),
+    worksFor: { "@id": ORGANIZATION_ID },
+  });
+
+  const isFounder = (role: string) => /founder/i.test(role);
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    url: absoluteUrl("/about"),
+    mainEntity: {
+      "@id": ORGANIZATION_ID,
+      founder: team.filter((m) => isFounder(m.role)).map(person),
+      employee: team.filter((m) => !isFounder(m.role)).map(person),
+    },
+  };
+}

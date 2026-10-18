@@ -13,7 +13,7 @@ import {
 import { prototypeImages, team } from "@/lib/site-data";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
-import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
+import { aboutPageSchema, breadcrumbSchema, pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "About Us",
@@ -55,6 +55,7 @@ export default function AboutPage() {
   return (
     <>
       <JsonLd data={breadcrumbSchema([{ name: "About Us", path: "/about" }])} />
+      {team.length > 0 && <JsonLd data={aboutPageSchema(team)} />}
       <main
         id="main-content"
         tabIndex={-1}
