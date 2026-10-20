@@ -138,6 +138,84 @@ export default function TermsPage() {
         Terms or applicable law have been violated.
       </p>
 
+      <h2 className="mt-10 text-2xl font-bold text-[#001b40]">Internal CRM access and acceptable use</h2>
+      <p>
+        Busiserve operates a separate internal application, the Company
+        CRM, for assigning and tracking our own work. This section
+        applies only to authorized Busiserve personnel who are given
+        access to it. It is <strong>not</strong> a paid, customer-facing
+        product: it is not sold, licensed or billed separately, no
+        customer purchase includes access to it, and nothing in these
+        Terms gives a client or website visitor a right to use it.
+      </p>
+      <p>Where you are given CRM access:</p>
+      <ul>
+        <li>
+          <strong>Authorized use only.</strong> Access is granted to
+          current Busiserve administrators, team members and other
+          authorized personnel, for Busiserve business purposes. It is
+          personal to you and is not transferable.
+        </li>
+        <li>
+          <strong>Credentials are issued by administration.</strong> Your
+          login email, role and initial password are assigned by an
+          authorized administrator. Your role determines what you can
+          see and do, and you must not attempt to obtain access beyond
+          it.
+        </li>
+        <li>
+          <strong>Protect your credentials.</strong> Keep your password
+          confidential, change an administrator-issued initial password,
+          and do not share, reuse, write down in shared locations, or
+          otherwise expose your credentials. You are responsible for
+          activity carried out under your account.
+        </li>
+        <li>
+          <strong>Report suspected compromise.</strong> Tell
+          administration promptly if you believe your credentials have
+          been exposed, your account has been used by someone else, or
+          you notice any unauthorized access or unexpected activity.
+        </li>
+        <li>
+          <strong>Use it for assigned work.</strong> Use the CRM only for
+          the tasks, projects and records assigned to you or that your
+          role requires. Information you see in it — client details,
+          project records, commercial figures, colleagues&apos; records
+          and work reports — is confidential company and client
+          information.
+        </li>
+        <li>
+          <strong>Prohibited conduct.</strong> You must not access
+          accounts, records or systems you are not authorized to use;
+          share credentials or let another person use your account;
+          bypass, probe or interfere with authentication, role
+          restrictions or other security controls; extract, copy or
+          disclose company or client information outside your assigned
+          work; enter false or misleading records; or use the CRM for
+          any unlawful purpose or any purpose unrelated to Busiserve
+          business.
+        </li>
+        <li>
+          <strong>Access can be suspended or revoked.</strong>
+          Administration may suspend, restrict or revoke CRM access, and
+          disable the associated sign-in account, for legitimate
+          security, operational, compliance or employment reasons —
+          including suspected credential compromise or misuse — and
+          access ends when your engagement with Busiserve ends. Records
+          of work already carried out are retained as described in our{" "}
+          <Link href="/privacy">Privacy Policy</Link>.
+        </li>
+      </ul>
+      <p>
+        How the CRM processes information, and the access controls and
+        retention that apply to it, are described in the &quot;Internal
+        Company CRM&quot; section of our{" "}
+        <Link href="/privacy">Privacy Policy</Link>. Your employment,
+        contractor or internship agreement and any internal policy issued
+        to you continue to apply alongside this section, and where that
+        agreement or policy is stricter, it governs.
+      </p>
+
       <h2 className="mt-10 text-2xl font-bold text-[#001b40]">Plan pricing and currency</h2>
       <p>
         Subscription prices, the number of included change requests,

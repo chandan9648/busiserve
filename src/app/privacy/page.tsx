@@ -10,7 +10,7 @@ import { businessIdentity, displayPhone } from "@/lib/site-data";
 export const metadata: Metadata = pageMetadata({
   title: "Privacy Policy",
   description:
-    "How Busiserve Infotech Solution collects, uses, shares and protects personal information across our website, client portal and payment flow.",
+    "How Busiserve Infotech Solution collects, uses, shares and protects personal information across our website, client portal, payment flow and internal company CRM.",
   path: "/privacy",
   keywords: ["privacy policy", "data protection"],
 });
@@ -132,6 +132,84 @@ export default function PrivacyPage() {
           Refund &amp; Cancellation Policy
         </Link>
         .
+      </p>
+
+      <h2 className="mt-10 text-2xl font-bold text-[#001b40]">Internal Company CRM</h2>
+      <p>
+        Busiserve operates a separate internal application, the Company
+        CRM, which is used by our own administrators and team members to
+        assign work and track its progress. It is an internal tool: it is
+        not a customer-facing product, it is not sold or licensed
+        separately, and it has no public sign-up. Accounts exist only for
+        authorized Busiserve personnel.
+      </p>
+      <p>
+        <strong>Access and credentials.</strong> Each account is created
+        by an authorized administrator, who assigns the user&apos;s login
+        email address and role. Sign-in uses our authentication provider
+        (Google Firebase Authentication); passwords are held by that
+        provider and are not stored in the CRM&apos;s own records or
+        visible to administrators. An initial password set by an
+        administrator is shared with the user directly and should be
+        changed by them. Password reset is handled by the authentication
+        provider. Sessions use a server-verified, HTTP-only session
+        cookie that expires after a limited period and is re-checked on
+        each protected request.
+      </p>
+      <p>
+        <strong>What the CRM processes.</strong> The CRM holds only what
+        it needs to authenticate users and run internal work
+        coordination:
+      </p>
+      <ul>
+        <li><strong>Account records:</strong> the user&apos;s identifier, name, work email address, role, designation, account status, and which administrator created the account.</li>
+        <li><strong>Work assignment records:</strong> tasks and milestones with the assigned person, the related project, status, and due dates; and work reports filed by team members, which include the work date, the time recorded against a project, status and reviewer comments.</li>
+        <li><strong>Business records:</strong> client, project and project-request records entered by our team in the course of delivery work, together with company settings such as the working timezone.</li>
+        <li><strong>Team and intern records:</strong> where an administrator maintains them, the person&apos;s name, role, work email address, phone number, college, joining and end dates, status, and administrative notes.</li>
+        <li><strong>Notifications</strong> addressed to a particular user within the application.</li>
+        <li><strong>Audit records:</strong> for business changes, the CRM records who made the change, their role, the action, the record affected, and the time. These exist so a change can be traced and reviewed.</li>
+        <li><strong>Sign-in protection counters:</strong> to limit repeated failed sign-in attempts, the CRM stores a one-way hash derived from the requesting address and the email used, together with a counter and a reset time. The address itself is not stored in readable form.</li>
+      </ul>
+      <p>
+        Information in the CRM is processed only as needed for
+        authentication, task and project management, operational
+        functionality, and system security. We do not use CRM
+        information for marketing, we do not sell it, and the CRM is not
+        operated as a separate data-collection exercise about our
+        personnel beyond the work records described above.
+      </p>
+      <p>
+        <strong>Access controls.</strong> Every protected request is
+        checked on the server against the signed-in session and the
+        user&apos;s role. Administrators have full access; other roles see
+        only the projects assigned to them, the tasks assigned to them,
+        their own work reports and their own submissions, and certain
+        fields — including commercial figures on a project and internal
+        notes on a client — are removed before the data reaches them.
+        Direct database access from a browser is blocked by our database
+        security rules, so all reads and writes pass through our server
+        with these checks applied. Suspending an account disables the
+        sign-in account and ends access.
+      </p>
+      <p>
+        <strong>Retention.</strong> CRM records are kept for as long as
+        they remain needed for the work they document and for our
+        operational, accounting and legal obligations; the application
+        does not delete them automatically. When an administrator
+        removes a team member, that account is removed from the
+        authentication provider and its identifier is retired so it
+        cannot be reissued and give a new account sight of the earlier
+        user&apos;s records. Audit and work records relating to completed
+        work may be retained after the person&apos;s access ends.
+      </p>
+      <p>
+        <strong>Requests and questions.</strong> Authorized users and
+        former users may ask about the information the CRM holds about
+        them, or ask for it to be corrected, using the privacy contact
+        details at the end of this policy. Requests are handled as
+        described under &quot;Your choices and rights&quot; above,
+        subject to applicable law and to our need to retain records of
+        completed work.
       </p>
 
       <h2 className="mt-10 text-2xl font-bold text-[#001b40]">Data retention and security</h2>
