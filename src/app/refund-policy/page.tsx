@@ -79,6 +79,31 @@ export default function RefundPolicyPage() {
           </li>
         </ul>
 
+        <h2 className={heading}>The internal Company CRM is not sold</h2>
+
+        <p>
+          Busiserve also operates an internal application, the Company
+          CRM, which our own administrators and team members use to
+          assign and track work. It is not sold, licensed, subscribed to
+          or billed separately, to customers or to anyone else. There is
+          no purchase price, subscription fee or renewal attached to it,
+          no customer order includes access to it, and nothing on this
+          website charges for it.
+        </p>
+
+        <p>
+          Because nothing is ever paid for the CRM, there is no payment
+          to cancel and no amount that could be refunded in respect of
+          it. This changes nothing about the terms above: the
+          cancellation and refund terms for website update subscriptions
+          and for development projects continue to apply in full to
+          those paid services, and remain subject to applicable law.
+          Internal CRM access itself is granted, suspended or withdrawn
+          by Busiserve administration as described in our{" "}
+          <Link href="/terms">Terms of Service</Link>, which is an
+          access decision and not a cancellation or refund matter.
+        </p>
+
         <h2 className={heading}>How to request a cancellation or refund</h2>
 
         <p>
